@@ -37,7 +37,7 @@ export function buildPrompt(opts: {
     kind === "summary"
       ? "Write a clear, well-organized summary of this material in plain language, using short paragraphs or bullet points as fits. Highlight the key definitions, arguments or formulas."
       : kind === "questions"
-        ? "Draft 6 to 8 exam-style practice questions a lecturer might ask on this material (mix short-answer and 1-2 longer/essay-style questions). After the questions, add a short 'Answer notes' section with a one or two line pointer to the answer for each, without giving the full answer away."
+        ? "Draft 6 to 8 exam-style practice questions a lecturer might ask on this material: a mix of straight objective/multiple-choice questions and 1-2 scenario or essay-style questions that apply the material to a situation. Number the questions. For multiple-choice, label options A-D. Then add a '## Answers' section, numbered to match, giving the full correct answer for every question (not just a hint) — for multiple-choice, state the correct letter; for scenario/essay questions, give a complete model answer with brief reasoning."
         : kind === "topics"
           ? "Suggest 4 to 6 research topics or questions this material naturally opens up, each with one sentence on why it's worth exploring and, where relevant, what field or angle it connects to."
           : `Answer the student's question using only the excerpt as context. Student's question: "${question}"`;
