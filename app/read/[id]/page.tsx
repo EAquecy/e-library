@@ -45,6 +45,7 @@ export default async function ReadPage({ params }: { params: { id: string } }) {
       initialBookmarks={(bookmarks ?? []) as { id: string; page: number; note: string | null }[]}
       watermark={watermark}
       expiresAt={expiresAt}
+      aiPrice={b.ai_price}
     />
   );
 }

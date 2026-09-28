@@ -107,6 +107,28 @@ export async function cancelConsultation(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// ---------- Study assistant ----------
+export async function payForAiUse(input: {
+  bookId: string;
+  kind: "summary" | "questions" | "topics" | "chat";
+  scope: "page" | "book";
+  pageFrom: number;
+  pageTo: number;
+  question?: string;
+}): Promise<ActionResult & { usageId?: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("mock_pay_ai", {
+    p_book: input.bookId,
+    p_kind: input.kind,
+    p_scope: input.scope,
+    p_page_from: input.pageFrom,
+    p_page_to: input.pageTo,
+    p_question: input.question ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, usageId: (data as { id: string }).id };
+}
+
 // ---------- Profile ----------
 export async function updateProfile(formData: FormData) {
   const supabase = createClient();
@@ -144,6 +166,7 @@ export async function updateBook(bookId: string, formData: FormData) {
       rent_price: num("rent_price"),
       rent_days: num("rent_days") ?? 14,
       published: formData.get("published") === "on",
+      ai_price: num("ai_price") ?? 5,
     })
     .eq("id", bookId);
   if (error) redirect(`/lecturer/books/${bookId}?error=${encodeURIComponent(error.message)}`);

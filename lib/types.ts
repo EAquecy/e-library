@@ -24,6 +24,23 @@ export type Book = {
   rent_price: number | null;
   rent_days: number;
   published: boolean;
+  ai_enabled: boolean;
+  ai_price: number;
+  created_at: string;
+};
+
+export type AiUsage = {
+  id: string;
+  book_id: string;
+  student_id: string;
+  kind: "summary" | "questions" | "topics" | "chat";
+  scope: "page" | "book";
+  page_from: number;
+  page_to: number;
+  question: string | null;
+  output: string | null;
+  amount: number;
+  payment_ref: string;
   created_at: string;
 };
 

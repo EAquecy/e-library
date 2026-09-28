@@ -52,6 +52,16 @@ export default async function EditBookPage({ params, searchParams }: { params: {
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="published" defaultChecked={b.published} /> Published
         </label>
+
+        <fieldset className="space-y-3 rounded-md border border-paper-edge p-4">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-soft">Study assistant</legend>
+          <p className="text-sm text-ink-soft">Students can summarize, generate practice questions and ask questions about this title from the reader. You set what each use costs.</p>
+          <label className="flex items-center gap-3">
+            <span className="w-32 text-sm font-medium">Price per use (GH₵)</span>
+            <input name="ai_price" type="number" min={0} step="0.01" defaultValue={b.ai_price} className="input max-w-36" />
+          </label>
+        </fieldset>
+
         <button className="btn-primary">Save changes</button>
       </form>
 

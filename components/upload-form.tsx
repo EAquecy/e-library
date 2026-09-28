@@ -75,6 +75,7 @@ export function UploadForm({ userId }: { userId: string }) {
         rent_price: rent ? num("rent_price") : null,
         rent_days: num("rent_days") ?? 14,
         published: fd.get("published") === "on",
+        ai_price: num("ai_price") ?? 5,
       })
       .select("id")
       .single();
@@ -142,6 +143,15 @@ export function UploadForm({ userId }: { userId: string }) {
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="published" defaultChecked /> Publish now (students can find it immediately)
       </label>
+
+      <fieldset className="space-y-3 rounded-md border border-paper-edge p-4">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-soft">Study assistant</legend>
+        <p className="text-sm text-ink-soft">Students can summarize, generate practice questions and ask questions about this title from the reader. You set what each use costs.</p>
+        <label className="flex items-center gap-3">
+          <span className="w-32 text-sm font-medium">Price per use</span>
+          <input name="ai_price" type="number" min={0} step="0.01" defaultValue={5} className="input max-w-36" />
+        </label>
+      </fieldset>
 
       {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
       <button className="btn-primary w-full" disabled={!!step}>{step ?? "Upload and publish"}</button>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { loadPdfjs } from "@/lib/pdf";
 import { timeLeft } from "@/lib/format";
 import { OpenDiscussionButton } from "./open-discussion";
+import { StudyAssistant } from "./study-assistant";
 
 type Bookmark = { id: string; page: number; note: string | null };
 
@@ -19,6 +20,7 @@ export function Reader({
   initialBookmarks,
   watermark,
   expiresAt,
+  aiPrice,
 }: {
   bookId: string;
   title: string;
@@ -28,6 +30,7 @@ export function Reader({
   initialBookmarks: Bookmark[];
   watermark: string;
   expiresAt: string | null;
+  aiPrice: number;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
@@ -37,6 +40,7 @@ export function Reader({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(initialBookmarks);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
   const [expired, setExpired] = useState(false);
   const [pageInput, setPageInput] = useState(String(initialPage));
@@ -210,6 +214,9 @@ export function Reader({
                 Bookmarks ({bookmarks.length})
               </button>
               <OpenDiscussionButton bookId={bookId} page={page} className="btn-primary px-2.5 py-1.5" label="Ask" />
+              <button className="btn-gold px-2.5 py-1.5" onClick={() => setAssistantOpen(true)}>
+                Study assistant
+              </button>
             </>
           )}
         </div>
@@ -260,6 +267,8 @@ export function Reader({
           </aside>
         )}
       </div>
+
+      <StudyAssistant bookId={bookId} price={aiPrice} currentPage={page} open={assistantOpen} onClose={() => setAssistantOpen(false)} />
     </div>
   );
 }
