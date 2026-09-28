@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+}
+
+h1, h2, h3, .font-display { @apply font-serif; letter-spacing: -0.01em; }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-forest text-paper hover:bg-forest-dark; }
+  .btn-gold { @apply btn bg-gold text-ink hover:brightness-95; }
+  .btn-ghost { @apply btn border border-paper-edge bg-white/60 text-ink hover:bg-white; }
+  .btn-danger { @apply btn border border-clay/40 text-clay hover:bg-clay-light; }
+  .card { @apply rounded-lg border border-paper-edge bg-white/70; }
+  .input { @apply w-full rounded-md border border-paper-edge bg-white px-3 py-2 text-sm outline-none focus:border-forest focus:ring-2 focus:ring-forest/20; }
+  .label { @apply mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-soft; }
+  .chip { @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-forest; }
+}
+
+/* Reader: discourage selection and saving */
+.protected { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+@media print { body * { display: none !important; } body::after { content: "Printing is disabled for protected titles."; display: block !important; } }
