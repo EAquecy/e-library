@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { payForAiUse } from "@/app/actions";
-import { AI_MODES, pageRangeFor, type AiKind, type AiScope } from "@/lib/ai";
+import { AI_MODES, pageRangeFor, type AiKind, type AiScope, type AiTier } from "@/lib/ai";
 import { cedis, dateTime } from "@/lib/format";
 import type { AiUsage } from "@/lib/types";
 
@@ -25,9 +25,17 @@ export function StudyAssistant({
   const [scope, setScope] = useState<AiScope>("page");
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
+  const [moreBusy, setMoreBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ output: string; kind: AiKind; scope: AiScope; range: string } | null>(null);
+  const [result, setResult] = useState<{ output: string; kind: AiKind; scope: AiScope; range: string; tier?: AiTier } | null>(null);
+  const [moreResult, setMoreResult] = useState<{ output: string; range: string } | null>(null);
   const [history, setHistory] = useState<AiUsage[]>([]);
+
+  useEffect(() => {
+    setResult(null);
+    setMoreResult(null);
+    setError(null);
+  }, [kind, scope]);
 
   useEffect(() => {
     if (!open) return;
@@ -44,37 +52,66 @@ export function StudyAssistant({
   if (!open) return null;
 
   const { from, to } = pageRangeFor(scope, currentPage);
+  const range = scope === "page" ? `p. ${from}` : `p. ${from}–${to}`;
+
+  function refreshHistory() {
+    supabase
+      .from("ai_usage")
+      .select("*")
+      .eq("book_id", bookId)
+      .not("output", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => setHistory((data ?? []) as AiUsage[]));
+  }
+
+  async function runGeneration(tier?: AiTier) {
+    const pay = await payForAiUse({
+      bookId,
+      kind,
+      scope,
+      pageFrom: from,
+      pageTo: to,
+      question: kind === "chat" ? question : undefined,
+      tier,
+    });
+    if (!pay.ok) throw new Error(pay.error);
+    const res = await fetch("/api/ai/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ usageId: pay.usageId }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Something went wrong");
+    refreshHistory();
+    return json.output as string;
+  }
 
   async function generate() {
     setBusy(true);
     setError(null);
     setResult(null);
-    const pay = await payForAiUse({ bookId, kind, scope, pageFrom: from, pageTo: to, question: kind === "chat" ? question : undefined });
-    if (!pay.ok) {
-      setBusy(false);
-      return setError(pay.error);
-    }
+    setMoreResult(null);
     try {
-      const res = await fetch("/api/ai/generate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ usageId: pay.usageId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Something went wrong");
-      setResult({ output: json.output, kind, scope, range: scope === "page" ? `p. ${from}` : `p. ${from}–${to}` });
-      supabase
-        .from("ai_usage")
-        .select("*")
-        .eq("book_id", bookId)
-        .not("output", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(10)
-        .then(({ data }) => setHistory((data ?? []) as AiUsage[]));
+      const output = await runGeneration(kind === "questions" ? "free" : undefined);
+      setResult({ output, kind, scope, range, tier: kind === "questions" ? "free" : undefined });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function generateMore() {
+    setMoreBusy(true);
+    setError(null);
+    try {
+      const output = await runGeneration("more");
+      setMoreResult({ output, range });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setMoreBusy(false);
     }
   }
 
@@ -117,16 +154,32 @@ export function StudyAssistant({
 
           {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
 
-          <button className="btn-gold w-full" disabled={busy || (kind === "chat" && !question.trim())} onClick={generate}>
-            {busy ? "Thinking…" : `Generate · ${cedis(price)} (test)`}
+          <button className="btn-gold w-full" disabled={busy || moreBusy || (kind === "chat" && !question.trim())} onClick={generate}>
+            {busy ? "Thinking…" : kind === "questions" ? "Generate · Free" : `Generate · ${cedis(price)} (test)`}
           </button>
 
           {result && (
             <div className="card space-y-2 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 {AI_MODES.find((m) => m.kind === result.kind)?.label} · {result.range}
+                {result.tier === "free" && <span className="ml-1 rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
               </p>
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{result.output}</div>
+            </div>
+          )}
+
+          {kind === "questions" && result && (
+            <button className="btn-ghost w-full" disabled={busy || moreBusy} onClick={generateMore}>
+              {moreBusy ? "Thinking…" : `Generate more questions · ${cedis(price)} (test)`}
+            </button>
+          )}
+
+          {moreResult && (
+            <div className="card space-y-2 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+                More practice questions · {moreResult.range}
+              </p>
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">{moreResult.output}</div>
             </div>
           )}
 

@@ -38,6 +38,7 @@ export type AiUsage = {
   page_from: number;
   page_to: number;
   question: string | null;
+  tier: "free" | "more" | null;
   output: string | null;
   amount: number;
   payment_ref: string;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buildPrompt, type AiKind, type AiScope } from "@/lib/ai";
+import { buildPrompt, type AiKind, type AiScope, type AiTier } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -72,6 +72,7 @@ export async function POST(req: Request) {
     pageTo: usage.page_to,
     text: extracted,
     question: usage.question,
+    tier: usage.tier as AiTier | null,
   });
 
   let output: string;

@@ -115,6 +115,7 @@ export async function payForAiUse(input: {
   pageFrom: number;
   pageTo: number;
   question?: string;
+  tier?: "free" | "more";
 }): Promise<ActionResult & { usageId?: string }> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("mock_pay_ai", {
@@ -124,6 +125,7 @@ export async function payForAiUse(input: {
     p_page_from: input.pageFrom,
     p_page_to: input.pageTo,
     p_question: input.question ?? null,
+    p_tier: input.tier ?? null,
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true, usageId: (data as { id: string }).id };
