@@ -26,6 +26,9 @@ export type Book = {
   published: boolean;
   ai_enabled: boolean;
   ai_price: number;
+  // Prices for paid practice-question tiers beyond the free set, keyed by
+  // tier level as a string ("1", "2", ...) so new tiers need no migration.
+  ai_question_tier_prices: Record<string, number>;
   created_at: string;
 };
 
@@ -38,7 +41,9 @@ export type AiUsage = {
   page_from: number;
   page_to: number;
   question: string | null;
-  tier: "free" | "more" | null;
+  // 0 = the free practice-question set; 1, 2, ... = paid tiers; null for
+  // non-"questions" kinds.
+  tier_level: number | null;
   output: string | null;
   amount: number;
   payment_ref: string;

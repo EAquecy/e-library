@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     pageTo: usage.page_to,
     text: extracted,
     question: usage.question,
-    tier: usage.tier as AiTier | null,
+    tier: usage.tier_level as AiTier | null,
   });
 
   let output: string;

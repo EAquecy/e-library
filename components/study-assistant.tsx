@@ -3,19 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { payForAiUse } from "@/app/actions";
-import { AI_MODES, pageRangeFor, type AiKind, type AiScope, type AiTier } from "@/lib/ai";
+import { AI_MODES, FREE_QUESTION_TIER, pageRangeFor, QUESTION_TIER_CONFIG, type AiKind, type AiScope } from "@/lib/ai";
 import { cedis, dateTime } from "@/lib/format";
 import type { AiUsage } from "@/lib/types";
+
+type TierResult = { tier: number; output: string; range: string };
 
 export function StudyAssistant({
   bookId,
   price,
+  questionTierPrices,
   currentPage,
   open,
   onClose,
 }: {
   bookId: string;
   price: number;
+  // Paid practice-question tier prices for this book, keyed by tier level
+  // ("1", "2", ...). New tiers just need a new key here — the UI unlocks
+  // the next one automatically once the previous tier has been generated.
+  questionTierPrices: Record<string, number>;
   currentPage: number;
   open: boolean;
   onClose: () => void;
@@ -27,13 +34,24 @@ export function StudyAssistant({
   const [busy, setBusy] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ output: string; kind: AiKind; scope: AiScope; range: string; tier?: AiTier } | null>(null);
-  const [moreResult, setMoreResult] = useState<{ output: string; range: string } | null>(null);
+  const [result, setResult] = useState<{ output: string; kind: AiKind; scope: AiScope; range: string } | null>(null);
+  const [tierResults, setTierResults] = useState<TierResult[]>([]);
   const [history, setHistory] = useState<AiUsage[]>([]);
+
+  // Paid tiers on top of the free set, in ascending order, e.g. [1, 2, ...].
+  const paidTiers = useMemo(
+    () =>
+      Object.keys(questionTierPrices)
+        .map(Number)
+        .filter((n) => Number.isFinite(n) && n > 0)
+        .sort((a, b) => a - b),
+    [questionTierPrices]
+  );
+  const nextTier = kind === "questions" && result ? paidTiers[tierResults.length] : undefined;
 
   useEffect(() => {
     setResult(null);
-    setMoreResult(null);
+    setTierResults([]);
     setError(null);
   }, [kind, scope]);
 
@@ -65,7 +83,7 @@ export function StudyAssistant({
       .then(({ data }) => setHistory((data ?? []) as AiUsage[]));
   }
 
-  async function runGeneration(tier?: AiTier) {
+  async function runGeneration(tier?: number) {
     const pay = await payForAiUse({
       bookId,
       kind,
@@ -91,10 +109,10 @@ export function StudyAssistant({
     setBusy(true);
     setError(null);
     setResult(null);
-    setMoreResult(null);
+    setTierResults([]);
     try {
-      const output = await runGeneration(kind === "questions" ? "free" : undefined);
-      setResult({ output, kind, scope, range, tier: kind === "questions" ? "free" : undefined });
+      const output = await runGeneration(kind === "questions" ? FREE_QUESTION_TIER : undefined);
+      setResult({ output, kind, scope, range });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -103,11 +121,12 @@ export function StudyAssistant({
   }
 
   async function generateMore() {
+    if (nextTier === undefined) return;
     setMoreBusy(true);
     setError(null);
     try {
-      const output = await runGeneration("more");
-      setMoreResult({ output, range });
+      const output = await runGeneration(nextTier);
+      setTierResults((prev) => [...prev, { tier: nextTier, output, range }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -160,27 +179,29 @@ export function StudyAssistant({
 
           {result && (
             <div className="card space-y-2 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 {AI_MODES.find((m) => m.kind === result.kind)?.label} · {result.range}
-                {result.tier === "free" && <span className="ml-1 rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
+                {kind === "questions" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
               </p>
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{result.output}</div>
             </div>
           )}
 
-          {kind === "questions" && result && (
-            <button className="btn-ghost w-full" disabled={busy || moreBusy} onClick={generateMore}>
-              {moreBusy ? "Thinking…" : `Generate more questions · ${cedis(price)} (test)`}
-            </button>
-          )}
-
-          {moreResult && (
-            <div className="card space-y-2 p-4">
+          {tierResults.map((r) => (
+            <div key={r.tier} className="card space-y-2 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
-                More practice questions · {moreResult.range}
+                {QUESTION_TIER_CONFIG[r.tier]?.label ?? "More questions"} · {r.range}
               </p>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">{moreResult.output}</div>
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">{r.output}</div>
             </div>
+          ))}
+
+          {kind === "questions" && result && nextTier !== undefined && (
+            <button className="btn-ghost w-full" disabled={busy || moreBusy} onClick={generateMore}>
+              {moreBusy
+                ? "Thinking…"
+                : `Generate more questions · ${cedis(questionTierPrices[String(nextTier)])} (test)`}
+            </button>
           )}
 
           {history.length > 0 && (

@@ -21,6 +21,7 @@ export function Reader({
   watermark,
   expiresAt,
   aiPrice,
+  questionTierPrices,
 }: {
   bookId: string;
   title: string;
@@ -31,6 +32,7 @@ export function Reader({
   watermark: string;
   expiresAt: string | null;
   aiPrice: number;
+  questionTierPrices: Record<string, number>;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
@@ -268,7 +270,14 @@ export function Reader({
         )}
       </div>
 
-      <StudyAssistant bookId={bookId} price={aiPrice} currentPage={page} open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+      <StudyAssistant
+        bookId={bookId}
+        price={aiPrice}
+        questionTierPrices={questionTierPrices}
+        currentPage={page}
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+      />
     </div>
   );
 }
