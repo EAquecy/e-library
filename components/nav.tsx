@@ -28,6 +28,7 @@ export async function Nav() {
       ? [
           { href: "/lecturer", label: "Dashboard" },
           { href: "/lecturer/upload", label: "Upload" },
+          { href: "/lecturer/earnings", label: "Earnings" },
           { href: "/discussions", label: "Discussions", badge: pending },
           { href: "/sessions", label: "Sessions" },
         ]
@@ -35,6 +36,7 @@ export async function Nav() {
         ? [
             { href: "/publisher", label: "Dashboard" },
             { href: "/publisher/upload", label: "Upload" },
+            { href: "/publisher/earnings", label: "Earnings" },
             { href: "/discussions", label: "Discussions", badge: pending },
             { href: "/sessions", label: "Sessions" },
           ]

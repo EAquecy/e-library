@@ -35,7 +35,7 @@ export default async function LecturerDashboard({ searchParams }: { searchParams
 
       <div className="grid gap-3 sm:grid-cols-4">
         <Stat label="Titles" value={String(rows.length)} />
-        <Stat label="Earnings (test)" value={cedis(total)} />
+        <Stat label="Earnings (test)" value={cedis(total)} href="/lecturer/earnings" />
         <Stat label="Discussions to approve" value={String(pendingDisc ?? 0)} href="/discussions" alert={!!pendingDisc} />
         <Stat label="Session requests" value={String(pendingSess ?? 0)} href="/sessions" alert={!!pendingSess} />
       </div>
