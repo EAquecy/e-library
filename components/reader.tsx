@@ -46,6 +46,7 @@ export function Reader({
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
   const [expired, setExpired] = useState(false);
   const [pageInput, setPageInput] = useState(String(initialPage));
+  const [focused, setFocused] = useState(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -131,6 +132,24 @@ export function Reader({
     const i = setInterval(check, 30000);
     return () => clearInterval(i);
   }, [expiresAt]);
+
+  // Blur the page while this tab isn't the one on screen — makes a screenshot
+  // taken while quickly switching away, or of another app captured over a
+  // background tab, less useful. Only for students; not a real defense
+  // against a deliberate screenshot of the focused tab, just friction.
+  useEffect(() => {
+    if (!isStudent) return;
+    const update = () => setFocused(document.visibilityState === "visible" && document.hasFocus());
+    update();
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("blur", update);
+    window.addEventListener("focus", update);
+    return () => {
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("blur", update);
+      window.removeEventListener("focus", update);
+    };
+  }, [isStudent]);
 
   const go = useCallback((p: number) => setPage((cur) => Math.min(Math.max(1, p), numPages || cur)), [numPages]);
 
@@ -233,8 +252,17 @@ export function Reader({
             <div className="mx-auto flex aspect-[3/4] w-full max-w-[640px] animate-pulse items-center justify-center rounded bg-white text-ink-faint">Opening…</div>
           ) : (
             <div className="relative mx-auto w-fit bg-white shadow-book">
-              <canvas ref={canvasRef} className="block" onDragStart={(e) => e.preventDefault()} />
+              <canvas
+                ref={canvasRef}
+                className={`block transition-[filter] duration-150 ${!focused ? "blur-2xl" : ""}`}
+                onDragStart={(e) => e.preventDefault()}
+              />
               <Watermark text={watermark} />
+              {!focused && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/40">
+                  <p className="rounded bg-ink/80 px-3 py-1.5 text-xs font-medium text-paper">Reading paused</p>
+                </div>
+              )}
             </div>
           )}
           {isStudent && doc && (
