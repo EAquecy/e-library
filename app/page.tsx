@@ -53,7 +53,7 @@ export default async function Home() {
         {[
           { h: "Buy or rent", p: "Own a title for good, or rent it for the weeks you need at a lower price. Rentals lock automatically when they end." },
           { h: "Read, resume, bookmark", p: "Your page is saved every time you turn one. Bookmark and annotate key pages and jump back in one tap." },
-          { h: "Ask your lecturer", p: "Open a discussion from any page. Keep it public for the class, or private and book a paid one-on-one session." },
+          { h: "Ask the author", p: "Open a discussion from any page with the lecturer or publisher behind it. Keep it public for the class, or private and book a paid one-on-one session." },
         ].map((f) => (
           <div key={f.h} className="card p-5">
             <h3 className="mb-2 text-lg font-semibold">{f.h}</h3>
