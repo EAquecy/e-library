@@ -9,7 +9,19 @@ import type { Book } from "@/lib/types";
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: { q?: string; course?: string; subject?: string; dept?: string; lecturer?: string };
+  searchParams: {
+    q?: string;
+    course?: string;
+    subject?: string;
+    dept?: string;
+    lecturer?: string;
+    kind?: string;
+    searchBy?: string;
+    yearMode?: string;
+    year?: string;
+    yearFrom?: string;
+    yearTo?: string;
+  };
 }) {
   const { supabase } = await requireProfile();
   const q = (searchParams.q ?? "").trim();
@@ -17,17 +29,34 @@ export default async function BrowsePage({
   const subject = (searchParams.subject ?? "").trim();
   const dept = (searchParams.dept ?? "").trim();
   const lecturer = (searchParams.lecturer ?? "").trim();
+  const kind = (searchParams.kind ?? "").trim();
+  const searchBy = searchParams.searchBy === "person" ? "person" : "title";
+  const yearMode = searchParams.yearMode === "range" ? "range" : "exact";
+  const year = (searchParams.year ?? "").trim();
+  const yearFrom = (searchParams.yearFrom ?? "").trim();
+  const yearTo = (searchParams.yearTo ?? "").trim();
 
   let query = supabase
     .from("books")
     .select("*, lecturer:profiles!books_lecturer_id_fkey!inner(id, full_name, department)")
     .eq("published", true)
     .order("created_at", { ascending: false });
-  if (q) query = query.or(`title.ilike.%${q.replace(/[%,()]/g, "")}%,description.ilike.%${q.replace(/[%,()]/g, "")}%`);
+  if (q) {
+    const safe = q.replace(/[%,()]/g, "");
+    if (searchBy === "person") query = query.ilike("lecturer.full_name", `%${safe}%`);
+    else query = query.or(`title.ilike.%${safe}%,description.ilike.%${safe}%`);
+  }
   if (course) query = query.eq("course_code", course);
   if (subject) query = query.eq("subject", subject);
   if (dept) query = query.eq("lecturer.department", dept);
   if (lecturer) query = query.eq("lecturer_id", lecturer);
+  if (kind) query = query.eq("kind", kind);
+  if (yearMode === "range") {
+    if (yearFrom) query = query.gte("published_year", Number(yearFrom));
+    if (yearTo) query = query.lte("published_year", Number(yearTo));
+  } else if (year) {
+    query = query.eq("published_year", Number(year));
+  }
   const { data } = await query;
   const books = (data ?? []) as (Book & { lecturer: { id: string; full_name: string; department: string | null } | null })[];
 
@@ -64,13 +93,38 @@ export default async function BrowsePage({
           <p className="eyebrow">Catalogue</p>
           <h1 className="text-3xl font-semibold">Browse titles</h1>
         </div>
-        <form className="flex w-full max-w-md gap-2">
-          <input name="q" defaultValue={q} placeholder="Search title or topic" className="input" />
+        <form className="flex w-full max-w-md flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder={searchBy === "person" ? "Search lecturer or publisher name" : "Search title or topic"}
+              className="input"
+            />
+            <button className="btn-primary">Search</button>
+          </div>
+          <div className="flex gap-4 text-xs text-ink-soft">
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="searchBy" value="title" defaultChecked={searchBy !== "person"} /> Title / topic
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="searchBy" value="person" defaultChecked={searchBy === "person"} /> Lecturer / publisher name
+            </label>
+          </div>
           {course && <input type="hidden" name="course" value={course} />}
           {subject && <input type="hidden" name="subject" value={subject} />}
           {dept && <input type="hidden" name="dept" value={dept} />}
           {lecturer && <input type="hidden" name="lecturer" value={lecturer} />}
-          <button className="btn-primary">Search</button>
+          {kind && <input type="hidden" name="kind" value={kind} />}
+          {yearMode === "range" ? (
+            <>
+              <input type="hidden" name="yearMode" value="range" />
+              {yearFrom && <input type="hidden" name="yearFrom" value={yearFrom} />}
+              {yearTo && <input type="hidden" name="yearTo" value={yearTo} />}
+            </>
+          ) : (
+            year && <input type="hidden" name="year" value={year} />
+          )}
         </form>
       </div>
 
@@ -89,7 +143,10 @@ export default async function BrowsePage({
                 </div>
                 <div>
                   <p className="line-clamp-2 font-serif font-semibold leading-snug">{b.title}</p>
-                  <p className="text-xs text-ink-faint">{b.lecturer?.full_name}</p>
+                  <p className="text-xs text-ink-faint">
+                    {b.lecturer?.full_name}
+                    {b.published_year ? ` · ${b.published_year}` : ""}
+                  </p>
                   <RatingSummary average={r?.avg ?? null} count={r?.count ?? 0} />
                   <p className="mt-1 text-xs font-medium text-forest">
                     {b.buy_price !== null && <>Buy {cedis(b.buy_price)}</>}
