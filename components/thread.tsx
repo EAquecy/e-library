@@ -29,7 +29,10 @@ export function Thread({
   const [messages, setMessages] = useState<Message[]>(initial);
   const [names, setNames] = useState<Names>(initialNames);
   const [text, setText] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [showVideo, setShowVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canAttachVideo = me === lecturerId;
   const [pending, start] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
   const namesRef = useRef(names);
@@ -85,6 +88,18 @@ export function Thread({
                 </p>
                 <div className={`inline-block whitespace-pre-wrap rounded-lg px-3 py-2 text-left text-sm ${mine ? "bg-forest text-paper" : isLect ? "border border-forest/30 bg-forest-light" : "bg-white"}`}>
                   {m.body}
+                  {m.video_url && (
+                    <div className={m.body ? "mt-2" : ""}>
+                      <a
+                        href={m.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1 text-xs font-medium underline ${mine ? "text-paper" : "text-forest"}`}
+                      >
+                        ▶ Watch video explanation
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -95,33 +110,55 @@ export function Thread({
 
       {canPost ? (
         <form
-          className="flex gap-2 border-t border-paper-edge p-3"
+          className="space-y-2 border-t border-paper-edge p-3"
           onSubmit={(e) => {
             e.preventDefault();
             const body = text;
+            const video = videoUrl;
             start(async () => {
-              const res = await postMessage(discussionId, body);
+              const res = await postMessage(discussionId, body, video);
               if (!res.ok) return setError(res.error);
               setText("");
+              setVideoUrl("");
+              setShowVideo(false);
               setError(null);
               refresh();
             });
           }}
         >
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                (e.currentTarget.form as HTMLFormElement).requestSubmit();
-              }
-            }}
-            rows={2}
-            placeholder="Write a reply… (Enter to send, Shift+Enter for a new line)"
-            className="input flex-1 resize-none"
-          />
-          <button className="btn-primary self-end" disabled={pending || !text.trim()}>Send</button>
+          <div className="flex gap-2">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  (e.currentTarget.form as HTMLFormElement).requestSubmit();
+                }
+              }}
+              rows={2}
+              placeholder="Write a reply… (Enter to send, Shift+Enter for a new line)"
+              className="input flex-1 resize-none"
+            />
+            <button className="btn-primary self-end" disabled={pending || (!text.trim() && !videoUrl.trim())}>Send</button>
+          </div>
+          {canAttachVideo && (
+            <div>
+              {showVideo ? (
+                <input
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  type="url"
+                  placeholder="Paste a YouTube, Loom or Drive link explaining this"
+                  className="input text-sm"
+                />
+              ) : (
+                <button type="button" onClick={() => setShowVideo(true)} className="text-xs text-forest underline">
+                  + Attach a video explanation
+                </button>
+              )}
+            </div>
+          )}
         </form>
       ) : (
         <p className="border-t border-paper-edge p-3 text-center text-sm text-ink-soft">

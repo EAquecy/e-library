@@ -60,15 +60,19 @@ export async function setDiscussionVisibility(id: string, visibility: "public" |
   return { ok: true } as ActionResult;
 }
 
-export async function postMessage(discussionId: string, body: string): Promise<ActionResult> {
+export async function postMessage(discussionId: string, body: string, videoUrl?: string): Promise<ActionResult> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not signed in" };
   const text = body.trim();
-  if (!text) return { ok: false, error: "Message is empty" };
-  const { error } = await supabase.from("discussion_messages").insert({ discussion_id: discussionId, author_id: user.id, body: text });
+  const video = videoUrl?.trim() || null;
+  if (!text && !video) return { ok: false, error: "Message is empty" };
+  if (video && !/^https?:\/\//i.test(video)) return { ok: false, error: "Video link must start with http:// or https://" };
+  const { error } = await supabase
+    .from("discussion_messages")
+    .insert({ discussion_id: discussionId, author_id: user.id, body: text, video_url: video });
   if (error) return { ok: false, error: error.message.includes("row-level") ? "This discussion isn't open for replies" : error.message };
   return { ok: true };
 }
@@ -131,6 +135,15 @@ export async function payForAiUse(input: {
   return { ok: true, usageId: (data as { id: string }).id };
 }
 
+// ---------- Ratings ----------
+export async function rateBook(bookId: string, rating: number, review: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("rate_book", { p_book: bookId, p_rating: rating, p_review: review.trim() || null });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/books/${bookId}`);
+  return { ok: true };
+}
+
 // ---------- Profile ----------
 export async function updateProfile(formData: FormData) {
   const supabase = createClient();
@@ -152,35 +165,42 @@ export async function updateProfile(formData: FormData) {
 }
 
 // ---------- Lecturer: manage titles ----------
-export async function updateBook(bookId: string, formData: FormData) {
+export async function updateBook(bookId: string, home: "lecturer" | "publisher", formData: FormData) {
   const supabase = createClient();
   const num = (k: string) => {
     const v = String(formData.get(k) ?? "").trim();
     return v === "" ? null : Number(v);
   };
+  const str = (k: string) => String(formData.get(k) ?? "").trim() || null;
+  // Note: ai_price is intentionally never written here — the study assistant
+  // price is platform-controlled, not settable from the lecturer/publisher form.
   const { error } = await supabase
     .from("books")
     .update({
       title: String(formData.get("title") || "").trim(),
       description: String(formData.get("description") || "").trim(),
       course_code: String(formData.get("course_code") || "").trim().toUpperCase() || null,
+      subject: str("subject"),
+      authors: str("authors"),
+      journal_name: str("journal_name"),
+      published_year: num("published_year"),
+      doi: str("doi"),
       buy_price: num("buy_price"),
       rent_price: num("rent_price"),
       rent_days: num("rent_days") ?? 14,
       published: formData.get("published") === "on",
-      ai_price: num("ai_price") ?? 5,
     })
     .eq("id", bookId);
-  if (error) redirect(`/lecturer/books/${bookId}?error=${encodeURIComponent(error.message)}`);
-  revalidatePath("/lecturer");
-  redirect("/lecturer?saved=1");
+  if (error) redirect(`/${home}/books/${bookId}?error=${encodeURIComponent(error.message)}`);
+  revalidatePath(`/${home}`);
+  redirect(`/${home}?saved=1`);
 }
 
-export async function deleteBook(bookId: string) {
+export async function deleteBook(bookId: string, home: "lecturer" | "publisher" = "lecturer") {
   const supabase = createClient();
   const { count } = await supabase.from("entitlements").select("id", { count: "exact", head: true }).eq("book_id", bookId);
   if (count && count > 0) {
-    redirect(`/lecturer/books/${bookId}?error=${encodeURIComponent("Students have bought or rented this title, so it can't be deleted. Unpublish it instead.")}`);
+    redirect(`/${home}/books/${bookId}?error=${encodeURIComponent("Students have bought or rented this title, so it can't be deleted. Unpublish it instead.")}`);
   }
   const { data: book } = await supabase.from("books").select("file_path, cover_path").eq("id", bookId).single();
   const { error } = await supabase.from("books").delete().eq("id", bookId);
@@ -188,6 +208,6 @@ export async function deleteBook(bookId: string) {
     await supabase.storage.from("books").remove([book.file_path]);
     if (book.cover_path) await supabase.storage.from("covers").remove([book.cover_path]);
   }
-  revalidatePath("/lecturer");
-  redirect("/lecturer");
+  revalidatePath(`/${home}`);
+  redirect(`/${home}`);
 }

@@ -18,11 +18,12 @@ export function BookCover({
   title: string;
   courseCode: string | null;
   coverPath: string | null;
-  kind?: "book" | "handout";
+  kind?: "book" | "handout" | "publication";
   size?: "sm" | "md" | "lg";
 }) {
   const dims = size === "sm" ? "w-14 h-20 text-[9px]" : size === "lg" ? "w-48 h-68 text-sm" : "w-full aspect-[3/4] text-xs";
   const url = coverUrl(coverPath);
+  const label = courseCode ?? (kind === "handout" ? "HANDOUT" : kind === "publication" ? "PUBLICATION" : "");
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={url} alt="" className={`${dims} rounded-r-md rounded-l-sm object-cover shadow-book`} style={size === "lg" ? { height: "17rem" } : undefined} />;
@@ -34,7 +35,7 @@ export function BookCover({
       style={{ background: bg, ...(size === "lg" ? { height: "17rem" } : {}) }}
     >
       <div className="absolute inset-y-0 left-0 w-1.5 bg-black/15" />
-      <span className="font-semibold tracking-widest opacity-80">{courseCode ?? (kind === "handout" ? "HANDOUT" : "")}</span>
+      <span className="font-semibold tracking-widest opacity-80">{label}</span>
       {size !== "sm" && <span className="font-serif text-[1.35em] leading-snug">{title}</span>}
     </div>
   );

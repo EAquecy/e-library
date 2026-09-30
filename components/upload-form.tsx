@@ -5,7 +5,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { loadPdfjs } from "@/lib/pdf";
 
-export function UploadForm({ userId }: { userId: string }) {
+export function UploadForm({ userId, variant = "lecturer" }: { userId: string; variant?: "lecturer" | "publisher" }) {
   const router = useRouter();
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,14 +60,20 @@ export function UploadForm({ userId }: { userId: string }) {
       const v = String(fd.get(k) ?? "").trim();
       return v === "" ? null : Number(v);
     };
+    const str = (k: string) => String(fd.get(k) ?? "").trim() || null;
     const { data, error } = await supabase
       .from("books")
       .insert({
         lecturer_id: userId,
         title: String(fd.get("title")).trim(),
         description: String(fd.get("description") || "").trim(),
-        course_code: String(fd.get("course_code") || "").trim().toUpperCase() || null,
-        kind: fd.get("kind") === "handout" ? "handout" : "book",
+        subject: str("subject"),
+        course_code: variant === "publisher" ? null : String(fd.get("course_code") || "").trim().toUpperCase() || null,
+        kind: variant === "publisher" ? "publication" : fd.get("kind") === "handout" ? "handout" : "book",
+        authors: variant === "publisher" ? str("authors") : null,
+        journal_name: variant === "publisher" ? str("journal_name") : null,
+        published_year: variant === "publisher" ? num("published_year") : null,
+        doi: variant === "publisher" ? str("doi") : null,
         file_path: filePath,
         cover_path: coverPath,
         page_count: pages,
@@ -75,7 +81,6 @@ export function UploadForm({ userId }: { userId: string }) {
         rent_price: rent ? num("rent_price") : null,
         rent_days: num("rent_days") ?? 14,
         published: fd.get("published") === "on",
-        ai_price: num("ai_price") ?? 5,
       })
       .select("id")
       .single();
@@ -100,28 +105,62 @@ export function UploadForm({ userId }: { userId: string }) {
           <label className="label" htmlFor="title">Title</label>
           <input id="title" name="title" required className="input" />
         </div>
-        <div>
-          <label className="label" htmlFor="course_code">Course code</label>
-          <input id="course_code" name="course_code" placeholder="CSCD 205" className="input uppercase" />
-        </div>
+        {variant === "lecturer" && (
+          <div>
+            <label className="label" htmlFor="course_code">Course code</label>
+            <input id="course_code" name="course_code" placeholder="CSCD 205" className="input uppercase" />
+          </div>
+        )}
+      </div>
+      <div>
+        <label className="label" htmlFor="subject">Subject / program</label>
+        <input id="subject" name="subject" placeholder="e.g. Computer Science" className="input" />
       </div>
       <div>
         <label className="label" htmlFor="description">Description</label>
         <textarea id="description" name="description" rows={3} className="input" placeholder="What does it cover? Which semester?" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="kind">Type</label>
-          <select id="kind" name="kind" className="input">
-            <option value="book">Book</option>
-            <option value="handout">Handout</option>
-          </select>
+
+      {variant === "publisher" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="authors">Authors</label>
+            <input id="authors" name="authors" placeholder="A. Mensah, B. Owusu" className="input" />
+          </div>
+          <div>
+            <label className="label" htmlFor="journal_name">Journal / publication</label>
+            <input id="journal_name" name="journal_name" placeholder="Journal of..." className="input" />
+          </div>
+          <div>
+            <label className="label" htmlFor="published_year">Published year</label>
+            <input id="published_year" name="published_year" type="number" min={1900} max={2100} className="input" />
+          </div>
+          <div>
+            <label className="label" htmlFor="doi">DOI (optional)</label>
+            <input id="doi" name="doi" placeholder="10.xxxx/xxxxx" className="input" />
+          </div>
         </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="kind">Type</label>
+            <select id="kind" name="kind" className="input">
+              <option value="book">Book</option>
+              <option value="handout">Handout</option>
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="cover">Cover image (optional)</label>
+            <input id="cover" name="cover" type="file" accept="image/png,image/jpeg,image/webp" className="input" />
+          </div>
+        </div>
+      )}
+      {variant === "publisher" && (
         <div>
           <label className="label" htmlFor="cover">Cover image (optional)</label>
           <input id="cover" name="cover" type="file" accept="image/png,image/jpeg,image/webp" className="input" />
         </div>
-      </div>
+      )}
 
       <fieldset className="space-y-3 rounded-md border border-paper-edge p-4">
         <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-soft">Pricing (GH₵)</legend>
@@ -144,14 +183,7 @@ export function UploadForm({ userId }: { userId: string }) {
         <input type="checkbox" name="published" defaultChecked /> Publish now (students can find it immediately)
       </label>
 
-      <fieldset className="space-y-3 rounded-md border border-paper-edge p-4">
-        <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-soft">Study assistant</legend>
-        <p className="text-sm text-ink-soft">Students can summarize, generate practice questions and ask questions about this title from the reader. You set what each use costs.</p>
-        <label className="flex items-center gap-3">
-          <span className="w-32 text-sm font-medium">Price per use</span>
-          <input name="ai_price" type="number" min={0} step="0.01" defaultValue={5} className="input max-w-36" />
-        </label>
-      </fieldset>
+      <p className="text-xs text-ink-faint">Study assistant pricing for this title is set by Lectern, not by {variant === "publisher" ? "publishers" : "lecturers"}.</p>
 
       {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
       <button className="btn-primary w-full" disabled={!!step}>{step ?? "Upload and publish"}</button>

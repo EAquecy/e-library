@@ -1,4 +1,4 @@
-export type Role = "student" | "lecturer";
+export type Role = "student" | "lecturer" | "publisher";
 
 export type Profile = {
   id: string;
@@ -16,7 +16,14 @@ export type Book = {
   title: string;
   description: string;
   course_code: string | null;
-  kind: "book" | "handout";
+  kind: "book" | "handout" | "publication";
+  // Free-text subject/program tag, e.g. "Computer Science" — used for browse filtering.
+  subject: string | null;
+  // Citation-style fields, relevant mainly for kind === "publication".
+  authors: string | null;
+  journal_name: string | null;
+  published_year: number | null;
+  doi: string | null;
   cover_path: string | null;
   file_path: string;
   page_count: number | null;
@@ -30,6 +37,16 @@ export type Book = {
   // tier level as a string ("1", "2", ...) so new tiers need no migration.
   ai_question_tier_prices: Record<string, number>;
   created_at: string;
+};
+
+export type BookRating = {
+  id: string;
+  book_id: string;
+  student_id: string;
+  rating: number;
+  review: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type AiUsage = {
@@ -78,6 +95,7 @@ export type Message = {
   discussion_id: string;
   author_id: string;
   body: string;
+  video_url: string | null;
   created_at: string;
 };
 

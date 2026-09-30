@@ -14,7 +14,7 @@ export async function Nav() {
   if (user) {
     const { data } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
     profile = data;
-    if (profile?.role === "lecturer") {
+    if (profile?.role === "lecturer" || profile?.role === "publisher") {
       const [{ count: d }, { count: c }] = await Promise.all([
         supabase.from("discussions").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "pending"),
         supabase.from("consultations").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "requested"),
@@ -31,19 +31,28 @@ export async function Nav() {
           { href: "/discussions", label: "Discussions", badge: pending },
           { href: "/sessions", label: "Sessions" },
         ]
-      : profile
+      : profile?.role === "publisher"
         ? [
-            { href: "/library", label: "My shelf" },
-            { href: "/browse", label: "Browse" },
-            { href: "/discussions", label: "Discussions" },
+            { href: "/publisher", label: "Dashboard" },
+            { href: "/publisher/upload", label: "Upload" },
+            { href: "/discussions", label: "Discussions", badge: pending },
             { href: "/sessions", label: "Sessions" },
           ]
-        : [];
+        : profile
+          ? [
+              { href: "/library", label: "My shelf" },
+              { href: "/browse", label: "Browse" },
+              { href: "/discussions", label: "Discussions" },
+              { href: "/sessions", label: "Sessions" },
+            ]
+          : [];
+
+  const home = profile ? (profile.role === "lecturer" ? "/lecturer" : profile.role === "publisher" ? "/publisher" : "/library") : "/";
 
   return (
     <header className="sticky top-0 z-30 border-b border-paper-edge bg-paper/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href={profile ? (profile.role === "lecturer" ? "/lecturer" : "/library") : "/"}>
+        <Link href={home}>
           <Logo />
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">

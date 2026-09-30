@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { homeForRole } from "@/lib/session";
 
 export default async function Home() {
   const supabase = createClient();
@@ -9,7 +10,7 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (user) {
     const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    redirect(data?.role === "lecturer" ? "/lecturer" : "/library");
+    redirect(homeForRole(data?.role ?? "student"));
   }
 
   return (
@@ -27,6 +28,7 @@ export default async function Home() {
           <div className="flex flex-wrap gap-3">
             <Link href="/signup?role=student" className="btn-primary px-5 py-2.5">I&apos;m a student</Link>
             <Link href="/signup?role=lecturer" className="btn-ghost px-5 py-2.5">I&apos;m a lecturer</Link>
+            <Link href="/signup?role=publisher" className="btn-ghost px-5 py-2.5">I&apos;m a publisher</Link>
           </div>
         </div>
         <div className="relative mx-auto h-72 w-full max-w-sm">

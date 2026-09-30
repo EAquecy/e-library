@@ -6,9 +6,11 @@ import { AccessBadge } from "@/components/access-badge";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { OpenDiscussionButton } from "@/components/open-discussion";
 import { StatusChip } from "@/components/status-chip";
+import { RatingSummary } from "@/components/rating-stars";
+import { RatingWidget } from "@/components/rating-widget";
 import { bestAccess } from "@/lib/access";
 import { shortDate } from "@/lib/format";
-import type { Book, Discussion, Entitlement } from "@/lib/types";
+import type { Book, BookRating, Discussion, Entitlement } from "@/lib/types";
 
 export default async function BookPage({ params }: { params: { id: string } }) {
   const { supabase, user, profile } = await requireProfile();
@@ -22,7 +24,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
   const book = bookRow as Book & { lecturer: { id: string; full_name: string; department: string | null; bio: string | null } };
   const isOwner = book.lecturer_id === user.id;
 
-  const [{ data: ents }, { data: discs }] = await Promise.all([
+  const [{ data: ents }, { data: discs }, { data: ratings }] = await Promise.all([
     supabase.from("entitlements").select("*").eq("book_id", book.id).eq("student_id", user.id),
     supabase
       .from("discussions")
@@ -30,10 +32,20 @@ export default async function BookPage({ params }: { params: { id: string } }) {
       .eq("book_id", book.id)
       .order("created_at", { ascending: false })
       .limit(30),
+    supabase
+      .from("book_ratings")
+      .select("*, student:profiles!book_ratings_student_id_fkey(full_name)")
+      .eq("book_id", book.id)
+      .order("updated_at", { ascending: false }),
   ]);
   const access = bestAccess((ents ?? []) as Entitlement[]);
   const canRead = isOwner || !!access?.active;
+  const everEntitled = (ents ?? []).length > 0;
   const discussions = (discs ?? []) as (Discussion & { student: { full_name: string } | null; discussion_messages: { count: number }[] })[];
+  const bookRatings = (ratings ?? []) as (BookRating & { student: { full_name: string } | null })[];
+  const ratingCount = bookRatings.length;
+  const ratingAvg = ratingCount ? bookRatings.reduce((s, r) => s + r.rating, 0) / ratingCount : null;
+  const myRating = bookRatings.find((r) => r.student_id === user.id) ?? null;
 
   return (
     <div className="space-y-10">
@@ -54,6 +66,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
             by <span className="font-medium text-ink">{book.lecturer.full_name}</span>
             {book.lecturer.department && <> · {book.lecturer.department}</>}
           </p>
+          <RatingSummary average={ratingAvg} count={ratingCount} />
           {book.description && <p className="max-w-2xl whitespace-pre-line text-ink-soft">{book.description}</p>}
 
           <div className="flex flex-wrap gap-2 pt-2">
@@ -76,6 +89,35 @@ export default async function BookPage({ params }: { params: { id: string } }) {
           )}
         </div>
       </div>
+
+      <section className="space-y-3">
+        <div className="flex items-end justify-between">
+          <h2 className="text-2xl font-semibold">Ratings &amp; reviews</h2>
+          <RatingSummary average={ratingAvg} count={ratingCount} />
+        </div>
+        <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
+          {profile.role === "student" && everEntitled && (
+            <RatingWidget bookId={book.id} initialRating={myRating?.rating ?? null} initialReview={myRating?.review ?? null} />
+          )}
+          {bookRatings.filter((r) => r.review).length === 0 ? (
+            <p className="card p-6 text-sm text-ink-soft self-start">No written reviews yet.</p>
+          ) : (
+            <ul className="card divide-y divide-paper-edge self-start">
+              {bookRatings
+                .filter((r) => r.review)
+                .map((r) => (
+                  <li key={r.id} className="space-y-1 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{r.student?.full_name ?? "Student"}</span>
+                      <span className="text-xs text-amber-500">{"★".repeat(r.rating)}</span>
+                    </div>
+                    <p className="text-sm text-ink-soft">{r.review}</p>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <section className="space-y-3">
         <div className="flex items-end justify-between">

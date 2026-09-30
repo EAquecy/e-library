@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const params = useSearchParams();
-  const [role, setRole] = useState<"student" | "lecturer">(params.get("role") === "lecturer" ? "lecturer" : "student");
+  const initialRole = params.get("role") === "lecturer" ? "lecturer" : params.get("role") === "publisher" ? "publisher" : "student";
+  const [role, setRole] = useState<"student" | "lecturer" | "publisher">(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,7 +49,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           return setNotice("Account created. Check your email to confirm it, then sign in.");
         }
       }
-      router.replace(role === "lecturer" ? "/lecturer" : "/browse");
+      router.replace(role === "lecturer" ? "/lecturer" : role === "publisher" ? "/publisher" : "/browse");
       router.refresh();
       return;
     }
@@ -66,14 +67,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     <div className="mx-auto max-w-md py-8">
       <h1 className="mb-1 text-3xl font-semibold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
       <p className="mb-6 text-sm text-ink-soft">
-        {mode === "login" ? "Sign in to continue reading." : "Students buy, rent and read. Lecturers publish and answer questions."}
+        {mode === "login" ? "Sign in to continue reading." : "Students buy, rent and read. Lecturers publish and answer questions. Publishers list research and journals."}
       </p>
 
       <form onSubmit={onSubmit} className="card space-y-4 p-6">
         {mode === "signup" && (
           <>
-            <div className="grid grid-cols-2 gap-2 rounded-md bg-paper-deep p-1">
-              {(["student", "lecturer"] as const).map((r) => (
+            <div className="grid grid-cols-3 gap-2 rounded-md bg-paper-deep p-1">
+              {(["student", "lecturer", "publisher"] as const).map((r) => (
                 <button
                   type="button"
                   key={r}
@@ -85,7 +86,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               ))}
             </div>
             <div>
-              <label className="label" htmlFor="full_name">Full name</label>
+              <label className="label" htmlFor="full_name">{role === "publisher" ? "Publisher / organization name" : "Full name"}</label>
               <input className="input" id="full_name" name="full_name" required />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -95,8 +96,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   <input className="input" id="student_id" name="student_id" required />
                 </div>
               )}
-              <div className={role === "lecturer" ? "col-span-2" : ""}>
-                <label className="label" htmlFor="department">Department</label>
+              <div className={role !== "student" ? "col-span-2" : ""}>
+                <label className="label" htmlFor="department">{role === "publisher" ? "Field / discipline (optional)" : "Department"}</label>
                 <input className="input" id="department" name="department" placeholder="e.g. Computer Science" />
               </div>
             </div>
