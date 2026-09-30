@@ -174,7 +174,7 @@ export function StudyAssistant({
           {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
 
           <button className="btn-gold w-full" disabled={busy || moreBusy || (kind === "chat" && !question.trim())} onClick={generate}>
-            {busy ? "Thinking…" : kind === "questions" ? "Generate · Free" : `Generate · ${cedis(price)} (test)`}
+            {busy ? "Thinking…" : kind === "questions" || kind === "summary" ? "Generate · Free" : `Generate · ${cedis(price)} (test)`}
           </button>
 
           {result && (
@@ -182,6 +182,7 @@ export function StudyAssistant({
               <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 {AI_MODES.find((m) => m.kind === result.kind)?.label} · {result.range}
                 {kind === "questions" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
+                {kind === "summary" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free</span>}
               </p>
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{result.output}</div>
             </div>

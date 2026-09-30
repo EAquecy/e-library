@@ -19,7 +19,7 @@ export const QUESTION_TIER_CONFIG: Record<number, QuestionTierConfig> = {
 const DEFAULT_TIER_CONFIG: QuestionTierConfig = { label: "More questions", setsCount: 1, mcqPerSet: 4, writtenPerSet: 2 };
 
 export const AI_MODES: { kind: AiKind; label: string; hint: string }[] = [
-  { kind: "summary", label: "Summarize", hint: "Plain-language summary of the material" },
+  { kind: "summary", label: "Summarize", hint: "Plain-language summary of the material · Free" },
   { kind: "questions", label: "Practice questions", hint: "Likely exam / mid-semester style questions" },
   { kind: "topics", label: "Research topics", hint: "Ideas worth reading deeper into or writing about" },
   { kind: "chat", label: "Ask a question", hint: "Ask anything about what you've read" },
