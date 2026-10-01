@@ -1,25 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { buildPrompt, type AiKind, type AiScope, type AiTier } from "@/lib/ai";
+import { extractPages } from "@/lib/pdf-extract";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-// Extracts text for the given (1-indexed, inclusive) page range from a PDF buffer.
-async function extractPages(data: Uint8Array, from: number, to: number) {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await pdfjs.getDocument({ data, isEvalSupported: false, disableFontFace: true }).promise;
-  const last = Math.min(to, doc.numPages);
-  const parts: string[] = [];
-  for (let p = Math.max(1, from); p <= last; p++) {
-    const page = await doc.getPage(p);
-    const content = await page.getTextContent();
-    const text = content.items.map((it) => ("str" in it ? it.str : "")).join(" ");
-    parts.push(`[page ${p}]\n${text}`);
-  }
-  await doc.destroy();
-  return parts.join("\n\n");
-}
 
 export async function POST(req: Request) {
   let body: { usageId?: string };
@@ -39,6 +24,7 @@ export async function POST(req: Request) {
 
   const { data: usage } = await supabase.from("ai_usage").select("*").eq("id", usageId).eq("student_id", user.id).maybeSingle();
   if (!usage) return NextResponse.json({ error: "Usage record not found" }, { status: 404 });
+  if (usage.kind === "molecules") return NextResponse.json({ error: "Wrong endpoint for this request" }, { status: 400 });
   if (usage.output) return NextResponse.json({ output: usage.output as string });
 
   const { data: book } = await supabase.from("books").select("title, course_code, file_path").eq("id", usage.book_id).single();

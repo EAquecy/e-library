@@ -21,6 +21,7 @@ export function Reader({
   watermark,
   expiresAt,
   aiPrice,
+  moleculePrice,
   questionTierPrices,
 }: {
   bookId: string;
@@ -32,6 +33,7 @@ export function Reader({
   watermark: string;
   expiresAt: string | null;
   aiPrice: number;
+  moleculePrice: number;
   questionTierPrices: Record<string, number>;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -301,6 +303,7 @@ export function Reader({
       <StudyAssistant
         bookId={bookId}
         price={aiPrice}
+        moleculePrice={moleculePrice}
         questionTierPrices={questionTierPrices}
         currentPage={page}
         open={assistantOpen}

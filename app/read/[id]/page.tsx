@@ -46,6 +46,7 @@ export default async function ReadPage({ params }: { params: { id: string } }) {
       watermark={watermark}
       expiresAt={expiresAt}
       aiPrice={b.ai_price}
+      moleculePrice={b.molecule_price}
       questionTierPrices={b.ai_question_tier_prices ?? {}}
     />
   );

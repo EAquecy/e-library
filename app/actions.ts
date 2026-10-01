@@ -114,7 +114,7 @@ export async function cancelConsultation(id: string): Promise<ActionResult> {
 // ---------- Study assistant ----------
 export async function payForAiUse(input: {
   bookId: string;
-  kind: "summary" | "questions" | "topics" | "chat";
+  kind: "summary" | "questions" | "topics" | "chat" | "molecules";
   scope: "page" | "book";
   pageFrom: number;
   pageTo: number;

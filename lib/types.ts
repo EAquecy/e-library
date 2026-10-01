@@ -33,6 +33,7 @@ export type Book = {
   published: boolean;
   ai_enabled: boolean;
   ai_price: number;
+  molecule_price: number;
   // Prices for paid practice-question tiers beyond the free set, keyed by
   // tier level as a string ("1", "2", ...) so new tiers need no migration.
   ai_question_tier_prices: Record<string, number>;
@@ -53,7 +54,7 @@ export type AiUsage = {
   id: string;
   book_id: string;
   student_id: string;
-  kind: "summary" | "questions" | "topics" | "chat";
+  kind: "summary" | "questions" | "topics" | "chat" | "molecules";
   scope: "page" | "book";
   page_from: number;
   page_to: number;

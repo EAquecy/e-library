@@ -1,4 +1,4 @@
-export type AiKind = "summary" | "questions" | "topics" | "chat";
+export type AiKind = "summary" | "questions" | "topics" | "chat" | "molecules";
 export type AiScope = "page" | "book";
 // 0 = the free practice-question set. 1, 2, ... = paid tiers, priced per
 // book via ai_question_tier_prices. Adding a new tier is just adding a
@@ -23,6 +23,7 @@ export const AI_MODES: { kind: AiKind; label: string; hint: string }[] = [
   { kind: "questions", label: "Practice questions", hint: "Likely exam / mid-semester style questions" },
   { kind: "topics", label: "Research topics", hint: "Ideas worth reading deeper into or writing about" },
   { kind: "chat", label: "Ask a question", hint: "Ask anything about what you've read" },
+  { kind: "molecules", label: "Come Alive 3D", hint: "Turn chemical compounds on this page into interactive 3D models · Paid" },
 ];
 
 const MAX_BOOK_SCOPE_PAGES = 40;

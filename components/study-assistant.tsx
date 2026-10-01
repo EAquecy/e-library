@@ -5,13 +5,25 @@ import { createClient } from "@/lib/supabase/client";
 import { payForAiUse } from "@/app/actions";
 import { AI_MODES, FREE_QUESTION_TIER, pageRangeFor, QUESTION_TIER_CONFIG, type AiKind, type AiScope } from "@/lib/ai";
 import { cedis, dateTime } from "@/lib/format";
+import { MoleculeGrid } from "@/components/molecule-viewer";
+import type { MoleculeResult } from "@/app/api/ai/molecules/route";
 import type { AiUsage } from "@/lib/types";
 
 type TierResult = { tier: number; output: string; range: string };
 
+function parseMolecules(output: string): MoleculeResult[] {
+  try {
+    const arr = JSON.parse(output);
+    return Array.isArray(arr) ? (arr as MoleculeResult[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function StudyAssistant({
   bookId,
   price,
+  moleculePrice,
   questionTierPrices,
   currentPage,
   open,
@@ -19,6 +31,7 @@ export function StudyAssistant({
 }: {
   bookId: string;
   price: number;
+  moleculePrice: number;
   // Paid practice-question tier prices for this book, keyed by tier level
   // ("1", "2", ...). New tiers just need a new key here — the UI unlocks
   // the next one automatically once the previous tier has been generated.
@@ -94,7 +107,7 @@ export function StudyAssistant({
       tier,
     });
     if (!pay.ok) throw new Error(pay.error);
-    const res = await fetch("/api/ai/generate", {
+    const res = await fetch(kind === "molecules" ? "/api/ai/molecules" : "/api/ai/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ usageId: pay.usageId }),
@@ -174,18 +187,33 @@ export function StudyAssistant({
           {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
 
           <button className="btn-gold w-full" disabled={busy || moreBusy || (kind === "chat" && !question.trim())} onClick={generate}>
-            {busy ? "Thinking…" : kind === "questions" || kind === "summary" ? "Generate · Free" : `Generate · ${cedis(price)} (test)`}
+            {busy
+              ? kind === "molecules"
+                ? "Looking up molecules…"
+                : "Thinking…"
+              : kind === "questions" || kind === "summary"
+                ? "Generate · Free"
+                : kind === "molecules"
+                  ? `Generate · ${cedis(moleculePrice)} (test)`
+                  : `Generate · ${cedis(price)} (test)`}
           </button>
 
-          {result && (
-            <div className="card space-y-2 p-4">
-              <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ink-faint">
-                {AI_MODES.find((m) => m.kind === result.kind)?.label} · {result.range}
-                {kind === "questions" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
-                {kind === "summary" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free</span>}
-              </p>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">{result.output}</div>
+          {result && kind === "molecules" ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Come Alive 3D · {result.range}</p>
+              <MoleculeGrid molecules={parseMolecules(result.output)} />
             </div>
+          ) : (
+            result && (
+              <div className="card space-y-2 p-4">
+                <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+                  {AI_MODES.find((m) => m.kind === result.kind)?.label} · {result.range}
+                  {kind === "questions" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free set</span>}
+                  {kind === "summary" && <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">Free</span>}
+                </p>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">{result.output}</div>
+              </div>
+            )
           )}
 
           {tierResults.map((r) => (
@@ -213,7 +241,16 @@ export function StudyAssistant({
                   <summary className="cursor-pointer font-medium">
                     {AI_MODES.find((m) => m.kind === h.kind)?.label} · p. {h.page_from === h.page_to ? h.page_from : `${h.page_from}–${h.page_to}`} · {dateTime(h.created_at)}
                   </summary>
-                  <p className="mt-2 whitespace-pre-wrap text-ink-soft">{h.output}</p>
+                  {h.kind === "molecules" ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {parseMolecules(h.output ?? "[]").map((m) => (
+                        <span key={`${h.id}-${m.name}`} className="chip bg-paper-deep text-ink-soft">{m.name}</span>
+                      ))}
+                      {parseMolecules(h.output ?? "[]").length === 0 && <span className="text-ink-faint">No compounds found</span>}
+                    </div>
+                  ) : (
+                    <p className="mt-2 whitespace-pre-wrap text-ink-soft">{h.output}</p>
+                  )}
                 </details>
               ))}
             </div>
