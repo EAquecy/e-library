@@ -316,7 +316,7 @@ export function Reader({
         </div>
       </div>
 
-      <div className={`flex ${isFullscreen ? "min-h-0 flex-1" : ""}`}>
+      <div className={`relative flex ${isFullscreen ? "min-h-0 flex-1" : ""}`}>
         {/* Pages preview panel */}
         {doc && numPages > 0 && pagesOpen && (isFullscreen ? showControls : true) && (
           <PagesPanel
@@ -363,7 +363,7 @@ export function Reader({
 
         {/* Bookmarks panel */}
         {panelOpen && (
-          <aside className="w-72 shrink-0 overflow-y-auto border-l border-paper-edge bg-white/60 p-4">
+          <aside className="sticky top-28 h-[calc(100vh-8rem)] max-h-[560px] w-72 shrink-0 self-start overflow-y-auto border-l border-paper-edge bg-white/60 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Bookmarks</h3>
               <button className="text-xs text-ink-faint" onClick={() => setPanelOpen(false)}>Close</button>
@@ -429,19 +429,21 @@ function PagesPanel({
 
   return (
     <aside
-      className={`w-32 shrink-0 overflow-y-auto sm:w-36 ${
+      className={`flex w-28 shrink-0 flex-col sm:w-32 ${
         immersive
           ? "absolute inset-y-0 left-0 z-10 border-r border-white/10 bg-forest-dark/95 pt-20 backdrop-blur"
-          : "border-r border-paper-edge bg-white/60"
+          : "sticky top-28 h-[calc(100vh-8rem)] max-h-[560px] self-start border-r border-paper-edge bg-white/60"
       }`}
     >
-      <div className="flex items-center justify-between px-3 pb-2 pt-3">
+      <div className="flex shrink-0 items-center justify-between px-3 pb-2 pt-3">
         <p className={`text-xs font-semibold uppercase tracking-wider ${immersive ? "text-paper/70" : "text-ink-faint"}`}>Pages</p>
         <button className={`text-xs ${immersive ? "text-paper/60 hover:text-paper" : "text-ink-faint hover:text-ink"}`} onClick={onClose}>
           Close
         </button>
       </div>
-      <ul ref={listRef} className="space-y-2 px-3 pb-4">
+      {/* Bounded + scrollable so this pane scrolls within itself — never the
+          whole page — however many pages the book has. */}
+      <ul ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-4">
         {Array.from({ length: numPages }, (_, i) => i + 1).map((n) => (
           <li key={n}>
             <button
