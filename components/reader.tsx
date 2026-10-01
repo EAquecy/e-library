@@ -53,11 +53,13 @@ export function Reader({
   const [pagesOpen, setPagesOpen] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [swipeAxis, setSwipeAxis] = useState<"horizontal" | "vertical">("horizontal");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTask = useRef<RenderTask | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load the document through the access-checked route
@@ -208,6 +210,33 @@ export function Reader({
 
   const go = useCallback((p: number) => setPage((cur) => Math.min(Math.max(1, p), numPages || cur)), [numPages]);
 
+  // Swipe to turn pages — direction is whichever axis the reader picked.
+  // Horizontal: swipe left for next page, right for previous (standard
+  // book-style paging). Vertical: swipe up for next, down for previous.
+  const SWIPE_THRESHOLD = 48;
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }, []);
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (swipeAxis === "horizontal") {
+        if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+        go(dx < 0 ? page + 1 : page - 1);
+      } else {
+        if (Math.abs(dy) < SWIPE_THRESHOLD || Math.abs(dy) < Math.abs(dx)) return;
+        go(dy < 0 ? page + 1 : page - 1);
+      }
+    },
+    [swipeAxis, go, page]
+  );
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
@@ -252,6 +281,7 @@ export function Reader({
   }
 
   const showControls = !isFullscreen || controlsVisible;
+  const panelShowing = !!doc && numPages > 0 && pagesOpen && showControls;
 
   return (
     <div
@@ -293,6 +323,14 @@ export function Reader({
           <button className="btn-ghost px-2.5 py-1.5" onClick={toggleFullscreen} title={isFullscreen ? "Exit full screen" : "Full screen"}>
             {isFullscreen ? "Exit full screen" : "Full screen"}
           </button>
+          <div className="grid grid-cols-2 gap-1 rounded-md bg-paper-deep p-1 text-xs" title="Swipe direction for turning pages on touch screens">
+            <button onClick={() => setSwipeAxis("horizontal")} className={`rounded px-2 py-1 ${swipeAxis === "horizontal" ? "bg-white font-medium shadow-sm" : "text-ink-soft"}`}>
+              Swipe ↔
+            </button>
+            <button onClick={() => setSwipeAxis("vertical")} className={`rounded px-2 py-1 ${swipeAxis === "vertical" ? "bg-white font-medium shadow-sm" : "text-ink-soft"}`}>
+              Swipe ↕
+            </button>
+          </div>
           {isStudent && (
             <>
               <span className="mx-1 h-5 w-px bg-paper-edge" />
@@ -318,7 +356,7 @@ export function Reader({
 
       <div className={`relative flex ${isFullscreen ? "min-h-0 flex-1" : ""}`}>
         {/* Pages preview panel */}
-        {doc && numPages > 0 && pagesOpen && (isFullscreen ? showControls : true) && (
+        {panelShowing && (
           <PagesPanel
             doc={doc}
             numPages={numPages}
@@ -334,7 +372,33 @@ export function Reader({
           ref={wrapRef}
           className={`protected relative flex-1 overflow-auto px-4 py-6 sm:px-6 ${isFullscreen ? "pt-20" : ""}`}
           onContextMenu={(e) => e.preventDefault()}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
+          {doc && !loadError && (
+            <>
+              <button
+                onClick={() => go(page - 1)}
+                disabled={page <= 1}
+                aria-label="Previous page"
+                className={`fixed top-1/2 z-20 -translate-y-1/2 rounded-full bg-ink/70 p-3 text-xl text-paper backdrop-blur transition-[opacity,left] hover:bg-ink/90 disabled:pointer-events-none disabled:opacity-0 ${
+                  panelShowing ? "left-32 sm:left-36" : "left-2 sm:left-4"
+                } ${isFullscreen && !showControls ? "pointer-events-none opacity-0" : "opacity-80"}`}
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => go(page + 1)}
+                disabled={!numPages || page >= numPages}
+                aria-label="Next page"
+                className={`fixed right-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-ink/70 p-3 text-xl text-paper backdrop-blur transition-opacity hover:bg-ink/90 disabled:pointer-events-none disabled:opacity-0 sm:right-4 ${
+                  isFullscreen && !showControls ? "pointer-events-none opacity-0" : "opacity-80"
+                }`}
+              >
+                ›
+              </button>
+            </>
+          )}
           {loadError ? (
             <div className="card mx-auto max-w-md p-8 text-center text-clay">{loadError}</div>
           ) : !doc ? (
