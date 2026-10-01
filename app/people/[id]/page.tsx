@@ -47,15 +47,23 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
           <h2 className="text-lg font-semibold">Publications</h2>
           <ul className="card divide-y divide-paper-edge">
             {person.publications.map((p, i) => (
-              <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-3 text-sm">
-                {p.url ? (
-                  <a href={p.url} target="_blank" rel="noopener noreferrer" className="font-medium text-forest hover:underline">
-                    {p.title}
-                  </a>
-                ) : (
+              <li key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-sm">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-medium">{p.title}</span>
-                )}
-                {p.date && <span className="text-xs text-ink-faint">{shortDate(p.date)}</span>}
+                  {p.url ? (
+                    <a
+                      href={p.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-medium text-forest underline underline-offset-2 hover:text-forest/80"
+                    >
+                      View publication <span aria-hidden>↗</span>
+                    </a>
+                  ) : (
+                    <span className="text-xs text-ink-faint">No link provided</span>
+                  )}
+                </div>
+                {p.date && <span className="shrink-0 text-xs text-ink-faint">{shortDate(p.date)}</span>}
               </li>
             ))}
           </ul>
