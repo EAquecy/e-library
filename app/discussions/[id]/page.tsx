@@ -12,14 +12,23 @@ export default async function DiscussionPage({ params }: { params: { id: string 
   const { supabase, user, profile } = await requireProfile();
   const { data } = await supabase
     .from("discussions")
-    .select("*, book:books(id, title, course_code), student:profiles!discussions_student_id_fkey(id, full_name, student_id), lecturer:profiles!discussions_lecturer_id_fkey(id, full_name, session_rate)")
+    .select(
+      "*, book:books(id, title, course_code), student:profiles!discussions_student_id_fkey(id, full_name, student_id), lecturer:profiles!discussions_lecturer_id_fkey(id, full_name, session_rate, immediate_session_price, group_session_price, private_session_schedule)"
+    )
     .eq("id", params.id)
     .maybeSingle();
   if (!data) notFound();
   const d = data as Discussion & {
     book: { id: string; title: string; course_code: string | null };
     student: { id: string; full_name: string; student_id: string | null };
-    lecturer: { id: string; full_name: string; session_rate: number };
+    lecturer: {
+      id: string;
+      full_name: string;
+      session_rate: number;
+      immediate_session_price: number;
+      group_session_price: number;
+      private_session_schedule: { days: string[]; start: string; end: string } | null;
+    };
   };
 
   const [{ data: msgs }, { data: cons }] = await Promise.all([
@@ -88,13 +97,22 @@ export default async function DiscussionPage({ params }: { params: { id: string 
                       <StatusChip value={c.status} />
                     </div>
                     <p className="text-xs text-ink-faint">
-                      {c.duration_minutes} min · {cedis(c.fee)} · {c.paid ? "paid" : "unpaid"}
+                      {c.kind === "private" ? "One-on-one" : c.kind === "immediate" ? "Immediate" : "Group"} · {c.duration_minutes} min · {cedis(c.fee)} ·{" "}
+                      {c.paid ? "paid" : "unpaid"}
                     </p>
                   </li>
                 ))}
               </ul>
             )}
-            {isAuthor && d.status === "approved" && <BookSession discussionId={d.id} rate={d.lecturer.session_rate} />}
+            {isAuthor && d.status === "approved" && (
+              <BookSession
+                discussionId={d.id}
+                rate={d.lecturer.session_rate}
+                immediateRate={d.lecturer.immediate_session_price}
+                groupRate={d.lecturer.group_session_price}
+                schedule={d.lecturer.private_session_schedule}
+              />
+            )}
             {isAuthor && d.status !== "approved" && <p className="text-xs text-ink-faint">You can book once your lecturer approves this discussion.</p>}
             <Link href="/sessions" className="block text-xs text-forest underline">Manage all sessions</Link>
           </div>

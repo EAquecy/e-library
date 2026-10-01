@@ -6,7 +6,7 @@ import { cancelConsultation, payConsultation, respondConsultation } from "@/app/
 import { cedis } from "@/lib/format";
 import type { Consultation } from "@/lib/types";
 
-export function SessionActions({ c, isLecturer }: { c: Consultation; isLecturer: boolean }) {
+export function SessionActions({ c, isLecturer, isBooker = true }: { c: Consultation; isLecturer: boolean; isBooker?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +46,10 @@ export function SessionActions({ c, isLecturer }: { c: Consultation; isLecturer:
       );
     }
     return null;
+  }
+
+  if (!isBooker) {
+    return c.meeting_link ? null : <p className="text-xs text-ink-faint">Booked by a fellow learner.</p>;
   }
 
   return (

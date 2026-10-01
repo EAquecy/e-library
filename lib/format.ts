@@ -3,7 +3,8 @@ export function cedis(n: number | null | undefined) {
   return "GH₵ " + Number(n).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function dateTime(iso: string) {
+export function dateTime(iso: string | null) {
+  if (!iso) return "Immediate (no date needed)";
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",

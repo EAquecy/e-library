@@ -58,9 +58,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: { s
               <p className="label">Publications</p>
               <PublicationsEditor initial={profile.publications} />
             </div>
-            <div>
-              <label className="label" htmlFor="session_rate">One-on-one rate (GH₵ per 30 minutes)</label>
-              <input id="session_rate" name="session_rate" type="number" min={0} step="0.01" defaultValue={profile.session_rate} className="input max-w-40" />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="label" htmlFor="session_rate">One-on-one rate (GH₵ / 30 min)</label>
+                <input id="session_rate" name="session_rate" type="number" min={0} step="0.01" defaultValue={profile.session_rate} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="immediate_session_price">Immediate session (GH₵, flat)</label>
+                <input id="immediate_session_price" name="immediate_session_price" type="number" min={0} step="0.01" defaultValue={profile.immediate_session_price} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="group_session_price">Group session (GH₵ / attendee)</label>
+                <input id="group_session_price" name="group_session_price" type="number" min={0} step="0.01" defaultValue={profile.group_session_price} className="input" />
+              </div>
             </div>
             <SchedulePicker name="private_session" label="When you're available for private sessions" initial={profile.private_session_schedule} />
             <SchedulePicker name="public_session" label="When you're available for public / class sessions" initial={profile.public_session_schedule} />

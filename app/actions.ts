@@ -88,6 +88,24 @@ export async function requestConsultation(discussionId: string, whenIso: string,
   return { ok: true };
 }
 
+export async function requestImmediateConsultation(discussionId: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("request_immediate_consultation", { p_disc: discussionId });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/discussions/${discussionId}`);
+  revalidatePath("/sessions");
+  return { ok: true };
+}
+
+export async function requestGroupConsultation(discussionId: string, whenIso: string, emails: string[]): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("request_group_consultation", { p_disc: discussionId, p_when: whenIso, p_emails: emails });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/discussions/${discussionId}`);
+  revalidatePath("/sessions");
+  return { ok: true };
+}
+
 export async function respondConsultation(id: string, status: "confirmed" | "declined" | "completed", link: string, note: string): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase.rpc("respond_consultation", { p_id: id, p_status: status, p_link: link, p_note: note });
@@ -175,6 +193,8 @@ export async function updateProfile(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const rate = Number(formData.get("session_rate"));
+  const immediateRate = Number(formData.get("immediate_session_price"));
+  const groupRate = Number(formData.get("group_session_price"));
   const patch: Record<string, unknown> = {
     full_name: String(formData.get("full_name") || "").trim(),
     department: String(formData.get("department") || "").trim() || null,
@@ -182,6 +202,8 @@ export async function updateProfile(formData: FormData) {
   };
   if (formData.has("student_id")) patch.student_id = String(formData.get("student_id") || "").trim() || null;
   if (formData.has("session_rate") && Number.isFinite(rate) && rate >= 0) patch.session_rate = rate;
+  if (formData.has("immediate_session_price") && Number.isFinite(immediateRate) && immediateRate >= 0) patch.immediate_session_price = immediateRate;
+  if (formData.has("group_session_price") && Number.isFinite(groupRate) && groupRate >= 0) patch.group_session_price = groupRate;
   if (formData.has("institution")) patch.institution = String(formData.get("institution") || "").trim() || null;
   if (formData.has("private_session_start")) patch.private_session_schedule = readSchedule(formData, "private_session");
   if (formData.has("public_session_start")) patch.public_session_schedule = readSchedule(formData, "public_session");

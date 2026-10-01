@@ -14,6 +14,8 @@ export type Profile = {
   department: string | null;
   bio: string | null;
   session_rate: number;
+  immediate_session_price: number;
+  group_session_price: number;
   avatar_path: string | null;
   institution: string | null;
   publications: Publication[];
@@ -127,13 +129,22 @@ export type Consultation = {
   discussion_id: string;
   student_id: string;
   lecturer_id: string;
-  proposed_at: string;
+  proposed_at: string | null;
   duration_minutes: number;
   fee: number;
+  kind: "private" | "immediate" | "group";
   status: "requested" | "confirmed" | "declined" | "completed" | "cancelled";
   paid: boolean;
   payment_ref: string | null;
   meeting_link: string | null;
   lecturer_note: string | null;
+  created_at: string;
+};
+
+export type ConsultationAttendee = {
+  id: string;
+  consultation_id: string;
+  email: string;
+  student_id: string | null;
   created_at: string;
 };
