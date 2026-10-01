@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireLecturer } from "@/lib/session";
 import { BookCover } from "@/components/book-cover";
+import { RatingSummary } from "@/components/rating-stars";
 import { cedis } from "@/lib/format";
 import type { Book } from "@/lib/types";
 
@@ -8,17 +9,25 @@ export default async function LecturerDashboard({ searchParams }: { searchParams
   const { supabase, user, profile } = await requireLecturer();
 
   const [{ data: books }, { count: pendingDisc }, { count: pendingSess }] = await Promise.all([
-    supabase.from("books").select("*, entitlements(kind, amount, expires_at)").eq("lecturer_id", user.id).order("created_at", { ascending: false }),
+    supabase
+      .from("books")
+      .select("*, entitlements(kind, amount, expires_at), book_ratings(rating)")
+      .eq("lecturer_id", user.id)
+      .order("created_at", { ascending: false }),
     supabase.from("discussions").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "pending"),
     supabase.from("consultations").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "requested"),
   ]);
 
-  const rows = ((books ?? []) as (Book & { entitlements: { kind: string; amount: number; expires_at: string | null }[] })[]).map((b) => {
+  const rows = (
+    (books ?? []) as (Book & { entitlements: { kind: string; amount: number; expires_at: string | null }[]; book_ratings: { rating: number }[] })[]
+  ).map((b) => {
     const sales = b.entitlements.filter((e) => e.kind === "purchase").length;
     const rentals = b.entitlements.filter((e) => e.kind === "rental").length;
     const activeRentals = b.entitlements.filter((e) => e.kind === "rental" && e.expires_at && new Date(e.expires_at) > new Date()).length;
     const revenue = b.entitlements.reduce((s, e) => s + Number(e.amount), 0);
-    return { ...b, sales, rentals, activeRentals, revenue };
+    const ratingCount = b.book_ratings.length;
+    const ratingAvg = ratingCount ? b.book_ratings.reduce((s, r) => s + r.rating, 0) / ratingCount : null;
+    return { ...b, sales, rentals, activeRentals, revenue, ratingCount, ratingAvg };
   });
   const total = rows.reduce((s, r) => s + r.revenue, 0);
 
@@ -54,6 +63,7 @@ export default async function LecturerDashboard({ searchParams }: { searchParams
                 <tr>
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Prices</th>
+                  <th className="px-4 py-3">Rating</th>
                   <th className="px-4 py-3">Sold</th>
                   <th className="px-4 py-3">Rentals (active)</th>
                   <th className="px-4 py-3">Earned</th>
@@ -77,6 +87,9 @@ export default async function LecturerDashboard({ searchParams }: { searchParams
                     <td className="px-4 py-3 text-xs">
                       {b.buy_price !== null && <div>Buy {cedis(b.buy_price)}</div>}
                       {b.rent_price !== null && <div>Rent {cedis(b.rent_price)} / {b.rent_days}d</div>}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <RatingSummary average={b.ratingAvg} count={b.ratingCount} />
                     </td>
                     <td className="px-4 py-3">{b.sales}</td>
                     <td className="px-4 py-3">{b.rentals} ({b.activeRentals})</td>
