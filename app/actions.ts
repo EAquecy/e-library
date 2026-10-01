@@ -159,9 +159,63 @@ export async function updateProfile(formData: FormData) {
   };
   if (formData.has("student_id")) patch.student_id = String(formData.get("student_id") || "").trim() || null;
   if (formData.has("session_rate") && Number.isFinite(rate) && rate >= 0) patch.session_rate = rate;
+  if (formData.has("institution")) patch.institution = String(formData.get("institution") || "").trim() || null;
+  if (formData.has("private_session_note")) patch.private_session_note = String(formData.get("private_session_note") || "").trim() || null;
+  if (formData.has("public_session_note")) patch.public_session_note = String(formData.get("public_session_note") || "").trim() || null;
+  if (formData.has("pub_title")) {
+    const titles = formData.getAll("pub_title").map((v) => String(v).trim());
+    const urls = formData.getAll("pub_url").map((v) => String(v).trim());
+    patch.publications = titles
+      .map((title, i) => ({ title, url: urls[i] ?? "" }))
+      .filter((p) => p.title || p.url)
+      .map((p) => ({ title: p.title || p.url, url: p.url }));
+  }
   await supabase.from("profiles").update(patch).eq("id", user.id);
   revalidatePath("/", "layout");
   redirect("/settings?saved=1");
+}
+
+// Avatar upload is a separate, small action: the file itself goes straight
+// to storage from the browser (lib pattern used everywhere else in this
+// app), and this just records the resulting path once that succeeds.
+export async function updateAvatarPath(path: string | null): Promise<ActionResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+  const { error } = await supabase.from("profiles").update({ avatar_path: path }).eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ---------- Availability calendar ----------
+export async function addAvailabilityBlock(input: { startDate: string; endDate: string; note: string }): Promise<ActionResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+  if (!input.startDate || !input.endDate) return { ok: false, error: "Pick a start and end date" };
+  if (input.endDate < input.startDate) return { ok: false, error: "End date can't be before the start date" };
+  const { error } = await supabase.from("availability_blocks").insert({
+    owner_id: user.id,
+    start_date: input.startDate,
+    end_date: input.endDate,
+    note: input.note.trim() || null,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/settings/availability");
+  return { ok: true };
+}
+
+export async function removeAvailabilityBlock(id: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.from("availability_blocks").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/settings/availability");
+  return { ok: true };
 }
 
 // ---------- Lecturer: manage titles ----------

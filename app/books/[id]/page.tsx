@@ -63,7 +63,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
           </div>
           <h1 className="text-3xl font-semibold sm:text-4xl">{book.title}</h1>
           <p className="text-sm text-ink-soft">
-            by <span className="font-medium text-ink">{book.lecturer.full_name}</span>
+            by <Link href={`/people/${book.lecturer.id}`} className="font-medium text-ink hover:underline">{book.lecturer.full_name}</Link>
             {book.lecturer.department && <> · {book.lecturer.department}</>}
           </p>
           <RatingSummary average={ratingAvg} count={ratingCount} />

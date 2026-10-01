@@ -1,5 +1,7 @@
 export type Role = "student" | "lecturer" | "publisher";
 
+export type Publication = { title: string; url: string };
+
 export type Profile = {
   id: string;
   full_name: string;
@@ -8,6 +10,20 @@ export type Profile = {
   department: string | null;
   bio: string | null;
   session_rate: number;
+  avatar_path: string | null;
+  institution: string | null;
+  publications: Publication[];
+  private_session_note: string | null;
+  public_session_note: string | null;
+};
+
+export type AvailabilityBlock = {
+  id: string;
+  owner_id: string;
+  start_date: string;
+  end_date: string;
+  note: string | null;
+  created_at: string;
 };
 
 export type Book = {

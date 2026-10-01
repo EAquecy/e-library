@@ -29,6 +29,12 @@ export async function requirePublisher() {
   return ctx;
 }
 
+export async function requireLecturerOrPublisher() {
+  const ctx = await requireProfile();
+  if (ctx.profile.role !== "lecturer" && ctx.profile.role !== "publisher") redirect(homeForRole(ctx.profile.role));
+  return ctx;
+}
+
 export async function requireStudent() {
   const ctx = await requireProfile();
   if (ctx.profile.role !== "student") redirect(homeForRole(ctx.profile.role));
