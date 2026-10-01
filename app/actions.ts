@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { homeForRole } from "@/lib/session";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -188,6 +189,57 @@ export async function updateAvatarPath(path: string | null): Promise<ActionResul
   if (error) return { ok: false, error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+// First-time completion of a lecturer/publisher profile — middleware sends
+// new signups here and won't let them past it until this succeeds.
+export async function completeOnboarding(formData: FormData) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: current } = await supabase.from("profiles").select("avatar_path, role").eq("id", user.id).single();
+  if (!current || (current.role !== "lecturer" && current.role !== "publisher")) redirect("/");
+
+  const bio = String(formData.get("bio") || "").trim();
+  const privateNote = String(formData.get("private_session_note") || "").trim();
+  const publicNote = String(formData.get("public_session_note") || "").trim();
+  const fullName = String(formData.get("full_name") || "").trim();
+
+  const missing: string[] = [];
+  if (!fullName) missing.push(current.role === "publisher" ? "a publisher/organization name" : "your name");
+  if (!current.avatar_path) missing.push("a profile photo");
+  if (!bio) missing.push("a short bio");
+  if (!privateNote) missing.push("your private-session availability");
+  if (!publicNote) missing.push("your public-session availability");
+  if (missing.length) redirect(`/onboarding?error=${encodeURIComponent("Add " + missing.join(", ") + " to continue.")}`);
+
+  const titles = formData.getAll("pub_title").map((v) => String(v).trim());
+  const urls = formData.getAll("pub_url").map((v) => String(v).trim());
+  const publications = titles
+    .map((title, i) => ({ title, url: urls[i] ?? "" }))
+    .filter((p) => p.title || p.url)
+    .map((p) => ({ title: p.title || p.url, url: p.url }));
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: fullName,
+      department: String(formData.get("department") || "").trim() || null,
+      institution: String(formData.get("institution") || "").trim() || null,
+      bio,
+      private_session_note: privateNote,
+      public_session_note: publicNote,
+      publications,
+      profile_completed: true,
+    })
+    .eq("id", user.id);
+  if (error) redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/", "layout");
+  redirect(homeForRole(current.role));
 }
 
 // ---------- Availability calendar ----------

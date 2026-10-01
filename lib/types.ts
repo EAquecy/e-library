@@ -15,6 +15,7 @@ export type Profile = {
   publications: Publication[];
   private_session_note: string | null;
   public_session_note: string | null;
+  profile_completed: boolean;
 };
 
 export type AvailabilityBlock = {
