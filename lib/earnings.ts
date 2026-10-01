@@ -8,33 +8,35 @@ export type EarningsRow = {
   expires_at: string | null;
   book_id: string;
   book_title: string;
-  book_kind: "book" | "handout" | "publication";
+  student_email: string;
 };
 
 export async function getEarnings(supabase: SupabaseClient, ownerId: string) {
-  const { data } = await supabase
-    .from("entitlements")
-    .select("id, kind, amount, created_at, expires_at, book:books!inner(id, title, kind, lecturer_id)")
-    .eq("book.lecturer_id", ownerId)
-    .order("created_at", { ascending: false });
+  const { data } = await supabase.rpc("owner_activity");
 
   const rows: EarningsRow[] = ((data ?? []) as unknown as {
-    id: string;
+    entitlement_id: string;
+    book_id: string;
+    book_title: string;
     kind: "purchase" | "rental";
     amount: number;
+    student_email: string;
     created_at: string;
     expires_at: string | null;
-    book: { id: string; title: string; kind: "book" | "handout" | "publication" };
   }[]).map((e) => ({
-    id: e.id,
+    id: e.entitlement_id,
     kind: e.kind,
     amount: Number(e.amount),
     created_at: e.created_at,
     expires_at: e.expires_at,
-    book_id: e.book.id,
-    book_title: e.book.title,
-    book_kind: e.book.kind,
+    book_id: e.book_id,
+    book_title: e.book_title,
+    student_email: e.student_email,
   }));
+
+  // ownerId is unused now that ownership is enforced inside the RPC itself,
+  // but kept in the signature so callers don't need to change.
+  void ownerId;
 
   const sales = rows.filter((r) => r.kind === "purchase");
   const rentals = rows.filter((r) => r.kind === "rental");

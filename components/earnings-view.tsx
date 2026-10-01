@@ -62,8 +62,10 @@ export function EarningsView({
               <tr>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Buyer / renter</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Rental ends</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-paper-edge">
@@ -77,8 +79,10 @@ export function EarningsView({
                       {r.kind === "purchase" ? "Sale" : "Rental"}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-xs text-ink-soft">{r.student_email}</td>
                   <td className="px-4 py-3 font-medium">{cedis(r.amount)}</td>
                   <td className="px-4 py-3 text-xs text-ink-faint">{dateTime(r.created_at)}</td>
+                  <td className="px-4 py-3 text-xs text-ink-faint">{r.expires_at ? dateTime(r.expires_at) : "—"}</td>
                 </tr>
               ))}
             </tbody>
