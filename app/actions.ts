@@ -146,6 +146,18 @@ export async function rateBook(bookId: string, rating: number, review: string): 
 }
 
 // ---------- Profile ----------
+
+// A schedule is standardized, never free text: a set of weekdays plus one
+// start/end time, submitted as `${name}_days` (repeated), `${name}_start`,
+// `${name}_end` by <SchedulePicker>.
+function readSchedule(formData: FormData, name: string): { days: string[]; start: string; end: string } | null {
+  const days = formData.getAll(`${name}_days`).map((v) => String(v));
+  const start = String(formData.get(`${name}_start`) || "").trim();
+  const end = String(formData.get(`${name}_end`) || "").trim();
+  if (days.length === 0 || !start || !end) return null;
+  return { days, start, end };
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = createClient();
   const {
@@ -161,8 +173,8 @@ export async function updateProfile(formData: FormData) {
   if (formData.has("student_id")) patch.student_id = String(formData.get("student_id") || "").trim() || null;
   if (formData.has("session_rate") && Number.isFinite(rate) && rate >= 0) patch.session_rate = rate;
   if (formData.has("institution")) patch.institution = String(formData.get("institution") || "").trim() || null;
-  if (formData.has("private_session_note")) patch.private_session_note = String(formData.get("private_session_note") || "").trim() || null;
-  if (formData.has("public_session_note")) patch.public_session_note = String(formData.get("public_session_note") || "").trim() || null;
+  if (formData.has("private_session_start")) patch.private_session_schedule = readSchedule(formData, "private_session");
+  if (formData.has("public_session_start")) patch.public_session_schedule = readSchedule(formData, "public_session");
   if (formData.has("pub_title")) {
     const titles = formData.getAll("pub_title").map((v) => String(v).trim());
     const urls = formData.getAll("pub_url").map((v) => String(v).trim());
@@ -204,16 +216,16 @@ export async function completeOnboarding(formData: FormData) {
   if (!current || (current.role !== "lecturer" && current.role !== "publisher")) redirect("/");
 
   const bio = String(formData.get("bio") || "").trim();
-  const privateNote = String(formData.get("private_session_note") || "").trim();
-  const publicNote = String(formData.get("public_session_note") || "").trim();
+  const privateSchedule = readSchedule(formData, "private_session");
+  const publicSchedule = readSchedule(formData, "public_session");
   const fullName = String(formData.get("full_name") || "").trim();
 
   const missing: string[] = [];
   if (!fullName) missing.push(current.role === "publisher" ? "a publisher/organization name" : "your name");
   if (!current.avatar_path) missing.push("a profile photo");
   if (!bio) missing.push("a short bio");
-  if (!privateNote) missing.push("your private-session availability");
-  if (!publicNote) missing.push("your public-session availability");
+  if (!privateSchedule) missing.push("your private-session availability");
+  if (!publicSchedule) missing.push("your public-session availability");
   if (missing.length) redirect(`/onboarding?error=${encodeURIComponent("Add " + missing.join(", ") + " to continue.")}`);
 
   const titles = formData.getAll("pub_title").map((v) => String(v).trim());
@@ -230,8 +242,8 @@ export async function completeOnboarding(formData: FormData) {
       department: String(formData.get("department") || "").trim() || null,
       institution: String(formData.get("institution") || "").trim() || null,
       bio,
-      private_session_note: privateNote,
-      public_session_note: publicNote,
+      private_session_schedule: privateSchedule,
+      public_session_schedule: publicSchedule,
       publications,
       profile_completed: true,
     })

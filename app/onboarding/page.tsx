@@ -2,6 +2,7 @@ import { requireProfile } from "@/lib/session";
 import { completeOnboarding } from "@/app/actions";
 import { AvatarUploader } from "@/components/avatar-uploader";
 import { PublicationsEditor } from "@/components/publications-editor";
+import { SchedulePicker } from "@/components/schedule-picker";
 
 export default async function OnboardingPage({ searchParams }: { searchParams: { error?: string } }) {
   const { profile, user } = await requireProfile();
@@ -48,28 +49,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: {
           <p className="label">Publications (optional, if available)</p>
           <PublicationsEditor initial={profile.publications} />
         </div>
-        <div>
-          <label className="label" htmlFor="private_session_note">When you&apos;re available for private sessions</label>
-          <input
-            id="private_session_note"
-            name="private_session_note"
-            required
-            defaultValue={profile.private_session_note ?? ""}
-            className="input"
-            placeholder="e.g. Weekday evenings, 6–8pm"
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="public_session_note">When you&apos;re available for public / class sessions</label>
-          <input
-            id="public_session_note"
-            name="public_session_note"
-            required
-            defaultValue={profile.public_session_note ?? ""}
-            className="input"
-            placeholder="e.g. Fridays, 2–4pm"
-          />
-        </div>
+        <SchedulePicker name="private_session" label="When you're available for private sessions" initial={profile.private_session_schedule} />
+        <SchedulePicker name="public_session" label="When you're available for public / class sessions" initial={profile.public_session_schedule} />
         <button className="btn-primary w-full">Finish and continue</button>
       </form>
     </div>

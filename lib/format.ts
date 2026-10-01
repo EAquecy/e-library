@@ -36,6 +36,27 @@ export function avatarUrl(path: string | null) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
 }
 
+// Canonical weekday set for the availability picker — every schedule uses
+// these exact short labels, so display never has to guess at formatting.
+export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+export function formatTime(hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (!Number.isFinite(h)) return hhmm;
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m ?? 0).padStart(2, "0")} ${period}`;
+}
+
+export function formatSchedule(schedule: { days: string[]; start: string; end: string } | null) {
+  if (!schedule || schedule.days.length === 0) return null;
+  const days =
+    schedule.days.length === 7
+      ? "Every day"
+      : WEEKDAYS.filter((d) => schedule.days.includes(d)).join(", ");
+  return `${days} · ${formatTime(schedule.start)} – ${formatTime(schedule.end)}`;
+}
+
 export function initials(name: string) {
   return (
     name

@@ -3,6 +3,7 @@ import { requireProfile } from "@/lib/session";
 import { updateProfile } from "@/app/actions";
 import { AvatarUploader } from "@/components/avatar-uploader";
 import { PublicationsEditor } from "@/components/publications-editor";
+import { SchedulePicker } from "@/components/schedule-picker";
 
 export default async function SettingsPage({ searchParams }: { searchParams: { saved?: string } }) {
   const { profile, user } = await requireProfile();
@@ -61,14 +62,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: { s
               <label className="label" htmlFor="session_rate">One-on-one rate (GH₵ per 30 minutes)</label>
               <input id="session_rate" name="session_rate" type="number" min={0} step="0.01" defaultValue={profile.session_rate} className="input max-w-40" />
             </div>
-            <div>
-              <label className="label" htmlFor="private_session_note">When you&apos;re available for private sessions</label>
-              <input id="private_session_note" name="private_session_note" defaultValue={profile.private_session_note ?? ""} className="input" placeholder="e.g. Weekday evenings, 6–8pm" />
-            </div>
-            <div>
-              <label className="label" htmlFor="public_session_note">When you&apos;re available for public / class sessions</label>
-              <input id="public_session_note" name="public_session_note" defaultValue={profile.public_session_note ?? ""} className="input" placeholder="e.g. Fridays, 2–4pm" />
-            </div>
+            <SchedulePicker name="private_session" label="When you're available for private sessions" initial={profile.private_session_schedule} />
+            <SchedulePicker name="public_session" label="When you're available for public / class sessions" initial={profile.public_session_schedule} />
           </>
         )}
         <button className="btn-primary">Save</button>

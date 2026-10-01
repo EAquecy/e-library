@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/session";
-import { avatarUrl, initials, shortDate, cedis } from "@/lib/format";
+import { avatarUrl, initials, shortDate, cedis, formatSchedule } from "@/lib/format";
 import type { AvailabilityBlock, Profile } from "@/lib/types";
 
 export default async function PersonProfilePage({ params }: { params: { id: string } }) {
@@ -61,21 +61,21 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
         </section>
       )}
 
-      {(person.private_session_note || person.public_session_note) && (
+      {(person.private_session_schedule || person.public_session_schedule) && (
         <section className="space-y-2">
           <h2 className="text-lg font-semibold">Session availability</h2>
           <div className="card grid gap-4 p-4 sm:grid-cols-2">
-            {person.private_session_note && (
+            {person.private_session_schedule && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Private sessions</p>
-                <p className="text-sm text-ink-soft">{person.private_session_note}</p>
+                <p className="text-sm text-ink-soft">{formatSchedule(person.private_session_schedule)}</p>
                 <p className="mt-1 text-xs text-ink-faint">{cedis(person.session_rate)} / 30 min</p>
               </div>
             )}
-            {person.public_session_note && (
+            {person.public_session_schedule && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Public / class sessions</p>
-                <p className="text-sm text-ink-soft">{person.public_session_note}</p>
+                <p className="text-sm text-ink-soft">{formatSchedule(person.public_session_schedule)}</p>
               </div>
             )}
           </div>

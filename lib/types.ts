@@ -2,6 +2,10 @@ export type Role = "student" | "lecturer" | "publisher";
 
 export type Publication = { title: string; url: string };
 
+// Standardized availability: a set of weekdays plus one start/end time —
+// never free text.
+export type SessionSchedule = { days: string[]; start: string; end: string };
+
 export type Profile = {
   id: string;
   full_name: string;
@@ -13,8 +17,8 @@ export type Profile = {
   avatar_path: string | null;
   institution: string | null;
   publications: Publication[];
-  private_session_note: string | null;
-  public_session_note: string | null;
+  private_session_schedule: SessionSchedule | null;
+  public_session_schedule: SessionSchedule | null;
   profile_completed: boolean;
 };
 
