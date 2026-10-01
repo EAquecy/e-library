@@ -142,16 +142,18 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
                     <ProgressBar page={progress?.current_page ?? 0} total={book.page_count} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-col items-start gap-1.5">
                       {access.active ? (
                         <Link href={`/read/${book.id}`} className="btn-primary py-1.5 whitespace-nowrap">{progress ? `Resume p. ${progress.current_page}` : "Start reading"}</Link>
                       ) : (
                         <Link href={`/books/${book.id}`} className="btn-gold py-1.5 whitespace-nowrap">Renew rental</Link>
                       )}
-                      <ShelfRate bookId={book.id} initialRating={myRatingByBook.get(book.id) ?? null} />
-                      <Link href={`/books/${book.id}#ratings`} className="text-xs font-medium text-ink-faint hover:text-forest hover:underline">
-                        Review
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <ShelfRate bookId={book.id} initialRating={myRatingByBook.get(book.id) ?? null} />
+                        <Link href={`/books/${book.id}#ratings`} className="text-xs font-medium text-ink-faint hover:text-forest hover:underline">
+                          Review
+                        </Link>
+                      </div>
                     </div>
                   </td>
                 </tr>
