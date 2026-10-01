@@ -9,15 +9,17 @@ export function OpenDiscussionButton({
   page,
   className = "btn-ghost",
   label = "Open discussion",
+  defaultVisibility = "public",
 }: {
   bookId: string;
   page?: number | null;
   className?: string;
   label?: string;
+  defaultVisibility?: "public" | "private";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [visibility, setVisibility] = useState<"public" | "private">(defaultVisibility);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 

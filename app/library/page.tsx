@@ -3,8 +3,9 @@ import { requireStudent } from "@/lib/session";
 import { BookCover } from "@/components/book-cover";
 import { AccessBadge } from "@/components/access-badge";
 import { ShelfRate } from "@/components/shelf-rate";
+import { OpenDiscussionButton } from "@/components/open-discussion";
 import { bestAccess } from "@/lib/access";
-import { shortDate } from "@/lib/format";
+import { timeAgo } from "@/lib/format";
 import type { Book, Entitlement } from "@/lib/types";
 
 type BookWithOwner = Book & { lecturer: { id: string; full_name: string; role: string } | null };
@@ -40,7 +41,6 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
       ...x,
       access: bestAccess(x.ents)!,
       progress: prog.get(x.book.id),
-      dateBought: x.ents.reduce((min, e) => (e.created_at < min ? e.created_at : min), x.ents[0].created_at),
     }))
     .sort((a, b) => (b.progress?.updated_at ?? "").localeCompare(a.progress?.updated_at ?? ""));
 
@@ -103,14 +103,13 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
               <tr className="border-b border-paper-edge text-left text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Author</th>
-                <th className="px-4 py-3">Date bought</th>
                 <th className="px-4 py-3">Last read</th>
                 <th className="px-4 py-3">Progress</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-paper-edge">
-              {items.map(({ book, access, progress, dateBought }) => (
+              {items.map(({ book, access, progress }) => (
                 <tr key={book.id} className="align-top">
                   <td className="px-4 py-3">
                     <div className="flex items-start gap-3">
@@ -136,8 +135,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
                       <span className="ml-1 text-xs text-ink-faint">· {book.lecturer.role === "publisher" ? "Publisher" : "Lecturer"}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-ink-soft">{shortDate(dateBought)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-ink-soft">{progress ? shortDate(progress.updated_at) : "Not started"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-ink-soft">{progress ? timeAgo(progress.updated_at) : "Not started"}</td>
                   <td className="px-4 py-3">
                     <ProgressBar page={progress?.current_page ?? 0} total={book.page_count} />
                   </td>
@@ -154,6 +152,21 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
                           Review
                         </Link>
                       </div>
+                      {access.active && (
+                        <div className="flex items-center gap-2">
+                          <OpenDiscussionButton
+                            bookId={book.id}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-ink-faint hover:text-forest hover:underline [&_svg]:h-3.5 [&_svg]:w-3.5"
+                            label="Start discussion"
+                          />
+                          <OpenDiscussionButton
+                            bookId={book.id}
+                            defaultVisibility="private"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-ink-faint hover:text-forest hover:underline [&_svg]:h-3.5 [&_svg]:w-3.5"
+                            label="Book session"
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
