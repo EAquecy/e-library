@@ -79,29 +79,46 @@ export async function postMessage(discussionId: string, body: string, videoUrl?:
 }
 
 // ---------- Consultations ----------
-export async function requestConsultation(discussionId: string, whenIso: string, minutes: number): Promise<ActionResult> {
+// These RPCs take a book id, not a discussion id, despite their `p_disc`
+// param name in the database (Postgres can't rename a function parameter
+// via CREATE OR REPLACE, and dropping the function needs an approval step
+// unavailable here). They find-or-create the backing private discussion
+// automatically, so booking a session no longer needs a separately
+// approved discussion first.
+export async function requestConsultation(bookId: string, whenIso: string, minutes: number, meetingLink?: string): Promise<ActionResult & { id?: string }> {
   const supabase = createClient();
-  const { error } = await supabase.rpc("request_consultation", { p_disc: discussionId, p_when: whenIso, p_minutes: minutes });
+  const { data, error } = await supabase.rpc("request_consultation", { p_disc: bookId, p_when: whenIso, p_minutes: minutes });
   if (error) return { ok: false, error: error.message };
-  revalidatePath(`/discussions/${discussionId}`);
+  const id = data as string;
+  if (meetingLink?.trim()) await supabase.rpc("set_meeting_link", { p_id: id, p_link: meetingLink });
   revalidatePath("/sessions");
-  return { ok: true };
+  return { ok: true, id };
 }
 
-export async function requestImmediateConsultation(discussionId: string): Promise<ActionResult> {
+export async function requestImmediateConsultation(bookId: string, meetingLink?: string): Promise<ActionResult & { id?: string }> {
   const supabase = createClient();
-  const { error } = await supabase.rpc("request_immediate_consultation", { p_disc: discussionId });
+  const { data, error } = await supabase.rpc("request_immediate_consultation", { p_disc: bookId });
   if (error) return { ok: false, error: error.message };
-  revalidatePath(`/discussions/${discussionId}`);
+  const id = data as string;
+  if (meetingLink?.trim()) await supabase.rpc("set_meeting_link", { p_id: id, p_link: meetingLink });
   revalidatePath("/sessions");
-  return { ok: true };
+  return { ok: true, id };
 }
 
-export async function requestGroupConsultation(discussionId: string, whenIso: string, emails: string[]): Promise<ActionResult> {
+export async function requestGroupConsultation(bookId: string, whenIso: string, emails: string[], meetingLink?: string): Promise<ActionResult & { id?: string }> {
   const supabase = createClient();
-  const { error } = await supabase.rpc("request_group_consultation", { p_disc: discussionId, p_when: whenIso, p_emails: emails });
+  const { data, error } = await supabase.rpc("request_group_consultation", { p_disc: bookId, p_when: whenIso, p_emails: emails });
   if (error) return { ok: false, error: error.message };
-  revalidatePath(`/discussions/${discussionId}`);
+  const id = data as string;
+  if (meetingLink?.trim()) await supabase.rpc("set_meeting_link", { p_id: id, p_link: meetingLink });
+  revalidatePath("/sessions");
+  return { ok: true, id };
+}
+
+export async function setMeetingLink(id: string, link: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("set_meeting_link", { p_id: id, p_link: link });
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/sessions");
   return { ok: true };
 }

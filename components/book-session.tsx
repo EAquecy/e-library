@@ -7,21 +7,27 @@ import { cedis, formatSchedule } from "@/lib/format";
 import type { SessionSchedule } from "@/lib/types";
 
 type Tab = "scheduled" | "immediate" | "group";
+type Mode = "chat" | "video";
 
 export function BookSession({
-  discussionId,
+  bookId,
   rate,
   immediateRate,
   groupRate,
   schedule,
 }: {
-  discussionId: string;
+  bookId: string;
   rate: number;
   immediateRate: number;
   groupRate: number;
   schedule: SessionSchedule | null;
 }) {
   const [tab, setTab] = useState<Tab>("scheduled");
+  const [mode, setMode] = useState<Mode>("chat");
+  const [link, setLink] = useState("");
+
+  const meetingLink = mode === "video" ? link : "";
+
   return (
     <div className="space-y-3 border-t border-paper-edge pt-3">
       <div className="grid grid-cols-3 gap-1 rounded-md bg-paper-deep p-1 text-xs">
@@ -40,14 +46,46 @@ export function BookSession({
           </button>
         ))}
       </div>
-      {tab === "scheduled" && <ScheduledForm discussionId={discussionId} rate={rate} schedule={schedule} />}
-      {tab === "immediate" && <ImmediateForm discussionId={discussionId} price={immediateRate} />}
-      {tab === "group" && <GroupForm discussionId={discussionId} price={groupRate} />}
+
+      <div className="space-y-1.5">
+        <p className="label">How will you meet?</p>
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-paper-deep p-1 text-xs">
+          {([
+            ["chat", "Chat (in-app)"],
+            ["video", "Video meeting"],
+          ] as [Mode, string][]).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`rounded px-2 py-1.5 font-medium ${mode === m ? "bg-white shadow-sm" : "text-ink-soft"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === "video" && (
+          <>
+            <input
+              type="url"
+              className="input"
+              placeholder="Zoom or Google Meet link (optional — either of you can add it)"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+            />
+            <p className="text-xs text-ink-faint">Visible to everyone on the booking as soon as it&apos;s set, even before this is confirmed.</p>
+          </>
+        )}
+      </div>
+
+      {tab === "scheduled" && <ScheduledForm bookId={bookId} rate={rate} schedule={schedule} meetingLink={meetingLink} />}
+      {tab === "immediate" && <ImmediateForm bookId={bookId} price={immediateRate} meetingLink={meetingLink} />}
+      {tab === "group" && <GroupForm bookId={bookId} price={groupRate} meetingLink={meetingLink} />}
     </div>
   );
 }
 
-function ScheduledForm({ discussionId, rate, schedule }: { discussionId: string; rate: number; schedule: SessionSchedule | null }) {
+function ScheduledForm({ bookId, rate, schedule, meetingLink }: { bookId: string; rate: number; schedule: SessionSchedule | null; meetingLink: string }) {
   const router = useRouter();
   const [minutes, setMinutes] = useState(30);
   const [when, setWhen] = useState("");
@@ -63,7 +101,7 @@ function ScheduledForm({ discussionId, rate, schedule }: { discussionId: string;
         e.preventDefault();
         if (!when) return setError("Pick a date and time");
         start(async () => {
-          const res = await requestConsultation(discussionId, new Date(when).toISOString(), minutes);
+          const res = await requestConsultation(bookId, new Date(when).toISOString(), minutes, meetingLink);
           if (!res.ok) return setError(res.error);
           setError(null);
           setDone(true);
@@ -93,7 +131,7 @@ function ScheduledForm({ discussionId, rate, schedule }: { discussionId: string;
   );
 }
 
-function ImmediateForm({ discussionId, price }: { discussionId: string; price: number }) {
+function ImmediateForm({ bookId, price, meetingLink }: { bookId: string; price: number; meetingLink: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -109,7 +147,7 @@ function ImmediateForm({ discussionId, price }: { discussionId: string; price: n
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const res = await requestImmediateConsultation(discussionId);
+            const res = await requestImmediateConsultation(bookId, meetingLink);
             if (!res.ok) return setError(res.error);
             setError(null);
             setDone(true);
@@ -123,7 +161,7 @@ function ImmediateForm({ discussionId, price }: { discussionId: string; price: n
   );
 }
 
-function GroupForm({ discussionId, price }: { discussionId: string; price: number }) {
+function GroupForm({ bookId, price, meetingLink }: { bookId: string; price: number; meetingLink: string }) {
   const router = useRouter();
   const [when, setWhen] = useState("");
   const [emails, setEmails] = useState<string[]>([""]);
@@ -142,7 +180,7 @@ function GroupForm({ discussionId, price }: { discussionId: string; price: numbe
         if (!when) return setError("Pick a date and time");
         if (cleanEmails.length === 0) return setError("Add at least one fellow learner's email");
         start(async () => {
-          const res = await requestGroupConsultation(discussionId, new Date(when).toISOString(), cleanEmails);
+          const res = await requestGroupConsultation(bookId, new Date(when).toISOString(), cleanEmails, meetingLink);
           if (!res.ok) return setError(res.error);
           setError(null);
           setDone(true);

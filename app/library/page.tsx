@@ -4,11 +4,22 @@ import { BookCover } from "@/components/book-cover";
 import { AccessBadge } from "@/components/access-badge";
 import { ShelfRate } from "@/components/shelf-rate";
 import { OpenDiscussionButton } from "@/components/open-discussion";
+import { BookSessionModal } from "@/components/book-session-modal";
 import { bestAccess } from "@/lib/access";
 import { timeAgo } from "@/lib/format";
-import type { Book, Entitlement } from "@/lib/types";
+import type { Book, Entitlement, SessionSchedule } from "@/lib/types";
 
-type BookWithOwner = Book & { lecturer: { id: string; full_name: string; role: string } | null };
+type BookWithOwner = Book & {
+  lecturer: {
+    id: string;
+    full_name: string;
+    role: string;
+    session_rate: number;
+    immediate_session_price: number;
+    group_session_price: number;
+    private_session_schedule: SessionSchedule | null;
+  } | null;
+};
 
 export default async function LibraryPage({ searchParams }: { searchParams: { q?: string } }) {
   const { supabase, user, profile } = await requireStudent();
@@ -17,7 +28,9 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
   const [{ data: ents }, { data: progress }, { data: bookmarks }, { data: myRatings }] = await Promise.all([
     supabase
       .from("entitlements")
-      .select("*, book:books(*, lecturer:profiles!books_lecturer_id_fkey(id, full_name, role))")
+      .select(
+        "*, book:books(*, lecturer:profiles!books_lecturer_id_fkey(id, full_name, role, session_rate, immediate_session_price, group_session_price, private_session_schedule))"
+      )
       .eq("student_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("reading_progress").select("*").eq("student_id", user.id),
@@ -159,12 +172,18 @@ export default async function LibraryPage({ searchParams }: { searchParams: { q?
                             className="inline-flex items-center gap-1 text-xs font-medium text-ink-faint hover:text-forest hover:underline [&_svg]:h-3.5 [&_svg]:w-3.5"
                             label="Start discussion"
                           />
-                          <OpenDiscussionButton
-                            bookId={book.id}
-                            defaultVisibility="private"
-                            className="inline-flex items-center gap-1 text-xs font-medium text-ink-faint hover:text-forest hover:underline [&_svg]:h-3.5 [&_svg]:w-3.5"
-                            label="Book session"
-                          />
+                          {book.lecturer && (
+                            <BookSessionModal
+                              bookId={book.id}
+                              bookTitle={book.title}
+                              rate={book.lecturer.session_rate}
+                              immediateRate={book.lecturer.immediate_session_price}
+                              groupRate={book.lecturer.group_session_price}
+                              schedule={book.lecturer.private_session_schedule}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-ink-faint hover:text-forest hover:underline [&_svg]:h-3.5 [&_svg]:w-3.5"
+                              label="Book session"
+                            />
+                          )}
                         </div>
                       )}
                     </div>

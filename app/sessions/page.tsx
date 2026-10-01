@@ -98,12 +98,11 @@ export default async function SessionsPage() {
                         {c.discussion.title}
                       </Link>
                     )}
-                    {c.meeting_link && (c.paid || isTeaching) && (
+                    {c.meeting_link && (
                       <p className="text-sm">
                         Meeting link: <a href={c.meeting_link} target="_blank" rel="noreferrer" className="text-forest underline">{c.meeting_link}</a>
                       </p>
                     )}
-                    {c.meeting_link && !c.paid && !isTeaching && <p className="text-xs text-ink-faint">Meeting link unlocks after payment.</p>}
                     {c.lecturer_note && <p className="text-sm text-ink-soft">Note: {c.lecturer_note}</p>}
                   </div>
                   <SessionActions c={c} isLecturer={isTeaching} isBooker={c.student_id === user.id} />

@@ -104,16 +104,15 @@ export default async function DiscussionPage({ params }: { params: { id: string 
                 ))}
               </ul>
             )}
-            {isAuthor && d.status === "approved" && (
+            {isAuthor && (
               <BookSession
-                discussionId={d.id}
+                bookId={d.book.id}
                 rate={d.lecturer.session_rate}
                 immediateRate={d.lecturer.immediate_session_price}
                 groupRate={d.lecturer.group_session_price}
                 schedule={d.lecturer.private_session_schedule}
               />
             )}
-            {isAuthor && d.status !== "approved" && <p className="text-xs text-ink-faint">You can book once your lecturer approves this discussion.</p>}
             <Link href="/sessions" className="block text-xs text-forest underline">Manage all sessions</Link>
           </div>
         )}
