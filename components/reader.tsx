@@ -50,9 +50,15 @@ export function Reader({
   const [pageInput, setPageInput] = useState(String(initialPage));
   const [focused, setFocused] = useState(true);
 
+  const [pagesOpen, setPagesOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const renderTask = useRef<RenderTask | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load the document through the access-checked route
   useEffect(() => {
@@ -82,7 +88,11 @@ export function Reader({
     if (!doc || !canvasRef.current || !wrapRef.current) return;
     const pdfPage = await doc.getPage(page);
     const base = pdfPage.getViewport({ scale: 1 });
-    const width = Math.min(wrapRef.current.clientWidth, 900);
+    // Always fit within the actual available width (minus a small buffer so a
+    // scrollbar appearing/disappearing can't bounce it into an overflow loop),
+    // instead of a fixed cap — this is what was letting wide pages spill out
+    // and force horizontal scrolling.
+    const width = Math.min(wrapRef.current.clientWidth - 4, 1200);
     const scale = (width / base.width) * zoom;
     const viewport = pdfPage.getViewport({ scale });
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -106,11 +116,54 @@ export function Reader({
     render();
   }, [render]);
 
+  // Re-fit whenever the reading area's actual size changes — window resizes,
+  // but also the pages/bookmarks panels opening or closing, or entering and
+  // leaving full screen, all of which change wrapRef's width without firing
+  // a window "resize" event.
   useEffect(() => {
-    const onResize = () => render();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    if (!wrapRef.current) return;
+    const ro = new ResizeObserver(() => render());
+    ro.observe(wrapRef.current);
+    return () => ro.disconnect();
   }, [render]);
+
+  // Full screen mode
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  function toggleFullscreen() {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
+  }
+
+  // In full screen, the toolbar and pages panel hide themselves and only
+  // reveal on mouse movement, like a video player's on-screen controls.
+  useEffect(() => {
+    if (!isFullscreen) {
+      setControlsVisible(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      return;
+    }
+    const el = containerRef.current;
+    const reveal = () => {
+      setControlsVisible(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      hideTimer.current = setTimeout(() => setControlsVisible(false), 2200);
+    };
+    reveal();
+    el?.addEventListener("mousemove", reveal);
+    return () => {
+      el?.removeEventListener("mousemove", reveal);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, [isFullscreen]);
 
   // Save progress (debounced)
   useEffect(() => {
@@ -198,10 +251,21 @@ export function Reader({
     );
   }
 
+  const showControls = !isFullscreen || controlsVisible;
+
   return (
-    <div className="-mx-4 sm:-mx-6">
+    <div
+      ref={containerRef}
+      className={isFullscreen ? "flex h-screen flex-col overflow-hidden bg-forest-dark" : "-mx-4 sm:-mx-6"}
+    >
       {/* Toolbar */}
-      <div className="sticky top-14 z-20 flex flex-wrap items-center gap-2 border-b border-paper-edge bg-paper/95 px-4 py-2 backdrop-blur sm:px-6">
+      <div
+        className={`z-20 flex flex-wrap items-center gap-2 border-b bg-paper/95 px-4 py-2 backdrop-blur transition-opacity duration-200 sm:px-6 ${
+          isFullscreen
+            ? `absolute inset-x-0 top-0 border-paper-edge ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`
+            : "sticky top-14 border-paper-edge"
+        }`}
+      >
         <Link href={`/books/${bookId}`} className="mr-1 max-w-[40vw] truncate font-serif font-semibold hover:underline" title={title}>
           {title}
         </Link>
@@ -222,6 +286,13 @@ export function Reader({
           <span className="mx-1 h-5 w-px bg-paper-edge" />
           <button className="btn-ghost px-2.5 py-1.5" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.15).toFixed(2)))} aria-label="Zoom out">−</button>
           <button className="btn-ghost px-2.5 py-1.5" onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))} aria-label="Zoom in">+</button>
+          <span className="mx-1 h-5 w-px bg-paper-edge" />
+          <button className={`btn-ghost px-2.5 py-1.5 ${pagesOpen ? "bg-white font-medium shadow-sm" : ""}`} onClick={() => setPagesOpen((o) => !o)}>
+            Pages
+          </button>
+          <button className="btn-ghost px-2.5 py-1.5" onClick={toggleFullscreen} title={isFullscreen ? "Exit full screen" : "Full screen"}>
+            {isFullscreen ? "Exit full screen" : "Full screen"}
+          </button>
           {isStudent && (
             <>
               <span className="mx-1 h-5 w-px bg-paper-edge" />
@@ -245,18 +316,34 @@ export function Reader({
         </div>
       </div>
 
-      <div className="flex">
+      <div className={`flex ${isFullscreen ? "min-h-0 flex-1" : ""}`}>
+        {/* Pages preview panel */}
+        {doc && numPages > 0 && pagesOpen && (isFullscreen ? showControls : true) && (
+          <PagesPanel
+            doc={doc}
+            numPages={numPages}
+            currentPage={page}
+            onJump={go}
+            immersive={isFullscreen}
+            onClose={() => setPagesOpen(false)}
+          />
+        )}
+
         {/* Page */}
-        <div ref={wrapRef} className="protected relative flex-1 overflow-auto px-4 py-6 sm:px-6" onContextMenu={(e) => e.preventDefault()}>
+        <div
+          ref={wrapRef}
+          className={`protected relative flex-1 overflow-auto px-4 py-6 sm:px-6 ${isFullscreen ? "pt-20" : ""}`}
+          onContextMenu={(e) => e.preventDefault()}
+        >
           {loadError ? (
             <div className="card mx-auto max-w-md p-8 text-center text-clay">{loadError}</div>
           ) : !doc ? (
             <div className="mx-auto flex aspect-[3/4] w-full max-w-[640px] animate-pulse items-center justify-center rounded bg-white text-ink-faint">Opening…</div>
           ) : (
-            <div className="relative mx-auto w-fit bg-white shadow-book">
+            <div className="relative mx-auto w-fit max-w-full bg-white shadow-book">
               <canvas
                 ref={canvasRef}
-                className={`block transition-[filter] duration-150 ${!focused ? "blur-2xl" : ""}`}
+                className={`block max-w-full transition-[filter] duration-150 ${!focused ? "blur-2xl" : ""}`}
                 onDragStart={(e) => e.preventDefault()}
               />
               <Watermark text={watermark} />
@@ -267,7 +354,7 @@ export function Reader({
               )}
             </div>
           )}
-          {isStudent && doc && (
+          {isStudent && doc && !isFullscreen && (
             <p className="mt-3 text-center text-xs text-ink-faint">
               {saving === "saving" ? "Saving your place…" : saving === "saved" ? `Place saved at page ${page}` : ""}
             </p>
@@ -276,7 +363,7 @@ export function Reader({
 
         {/* Bookmarks panel */}
         {panelOpen && (
-          <aside className="w-72 shrink-0 border-l border-paper-edge bg-white/60 p-4">
+          <aside className="w-72 shrink-0 overflow-y-auto border-l border-paper-edge bg-white/60 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Bookmarks</h3>
               <button className="text-xs text-ink-faint" onClick={() => setPanelOpen(false)}>Close</button>
@@ -309,6 +396,125 @@ export function Reader({
         open={assistantOpen}
         onClose={() => setAssistantOpen(false)}
       />
+    </div>
+  );
+}
+
+// Rendered page-thumbnail bitmaps are cached per PDF document instance so
+// switching the panel open/closed, or re-rendering after a jump, never
+// redoes the same page twice.
+const thumbCache = new WeakMap<PDFDocumentProxy, Map<number, string>>();
+
+function PagesPanel({
+  doc,
+  numPages,
+  currentPage,
+  onJump,
+  immersive,
+  onClose,
+}: {
+  doc: PDFDocumentProxy;
+  numPages: number;
+  currentPage: number;
+  onJump: (p: number) => void;
+  immersive: boolean;
+  onClose: () => void;
+}) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest" });
+  }, [currentPage]);
+
+  return (
+    <aside
+      className={`w-32 shrink-0 overflow-y-auto sm:w-36 ${
+        immersive
+          ? "absolute inset-y-0 left-0 z-10 border-r border-white/10 bg-forest-dark/95 pt-20 backdrop-blur"
+          : "border-r border-paper-edge bg-white/60"
+      }`}
+    >
+      <div className="flex items-center justify-between px-3 pb-2 pt-3">
+        <p className={`text-xs font-semibold uppercase tracking-wider ${immersive ? "text-paper/70" : "text-ink-faint"}`}>Pages</p>
+        <button className={`text-xs ${immersive ? "text-paper/60 hover:text-paper" : "text-ink-faint hover:text-ink"}`} onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <ul ref={listRef} className="space-y-2 px-3 pb-4">
+        {Array.from({ length: numPages }, (_, i) => i + 1).map((n) => (
+          <li key={n}>
+            <button
+              ref={n === currentPage ? activeRef : undefined}
+              onClick={() => onJump(n)}
+              className={`block w-full rounded border p-1 text-center transition-colors ${
+                n === currentPage
+                  ? "border-forest ring-2 ring-forest"
+                  : immersive
+                    ? "border-white/10 hover:border-white/30"
+                    : "border-paper-edge hover:border-ink-faint"
+              }`}
+            >
+              <PageThumb doc={doc} pageNumber={n} />
+              <span className={`mt-1 block text-[10px] ${immersive ? "text-paper/60" : "text-ink-faint"}`}>Page {n}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
+function PageThumb({ doc, pageNumber }: { doc: PDFDocumentProxy; pageNumber: number }) {
+  const [src, setSrc] = useState<string | null>(() => thumbCache.get(doc)?.get(pageNumber) ?? null);
+  const elRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (src) return;
+    const el = elRef.current;
+    if (!el) return;
+    let cancelled = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        io.disconnect();
+        (async () => {
+          try {
+            const pdfPage = await doc.getPage(pageNumber);
+            const viewport = pdfPage.getViewport({ scale: 0.15 });
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.floor(viewport.width));
+            canvas.height = Math.max(1, Math.floor(viewport.height));
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+            if (cancelled) return;
+            const url = canvas.toDataURL("image/png");
+            if (!thumbCache.has(doc)) thumbCache.set(doc, new Map());
+            thumbCache.get(doc)!.set(pageNumber, url);
+            setSrc(url);
+          } catch {
+            /* a single thumbnail failing to render isn't worth surfacing */
+          }
+        })();
+      },
+      { rootMargin: "300px 0px" }
+    );
+    io.observe(el);
+    return () => {
+      cancelled = true;
+      io.disconnect();
+    };
+  }, [doc, pageNumber, src]);
+
+  return (
+    <div ref={elRef} className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded bg-paper-deep">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- small locally-rendered dataURL thumbnail, not a next/image candidate
+        <img src={src} alt="" className="h-full w-full object-contain" draggable={false} />
+      ) : (
+        <span className="text-[10px] text-ink-faint">{pageNumber}</span>
+      )}
     </div>
   );
 }
