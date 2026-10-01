@@ -2,17 +2,20 @@ import Link from "next/link";
 import { requireStudent } from "@/lib/session";
 import { BookCover } from "@/components/book-cover";
 import { AccessBadge } from "@/components/access-badge";
+import { ShelfRate } from "@/components/shelf-rate";
 import { bestAccess } from "@/lib/access";
 import type { Book, Entitlement } from "@/lib/types";
 
 export default async function LibraryPage() {
   const { supabase, user, profile } = await requireStudent();
 
-  const [{ data: ents }, { data: progress }, { data: bookmarks }] = await Promise.all([
+  const [{ data: ents }, { data: progress }, { data: bookmarks }, { data: myRatings }] = await Promise.all([
     supabase.from("entitlements").select("*, book:books(*)").eq("student_id", user.id).order("created_at", { ascending: false }),
     supabase.from("reading_progress").select("*").eq("student_id", user.id),
     supabase.from("bookmarks").select("book_id").eq("student_id", user.id),
+    supabase.from("book_ratings").select("book_id, rating").eq("student_id", user.id),
   ]);
+  const myRatingByBook = new Map((myRatings ?? []).map((r) => [r.book_id as string, r.rating as number]));
 
   const byBook = new Map<string, { book: Book; ents: Entitlement[] }>();
   for (const e of (ents ?? []) as (Entitlement & { book: Book })[]) {
@@ -66,12 +69,16 @@ export default async function LibraryPage() {
                 </div>
                 <ProgressBar page={progress?.current_page ?? 0} total={book.page_count} />
                 <p className="text-xs text-ink-faint">{bmCount.get(book.id) ?? 0} bookmark(s)</p>
-                <div className="mt-auto flex gap-2 pt-2">
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
                   {access.active ? (
                     <Link href={`/read/${book.id}`} className="btn-primary py-1.5">{progress ? `Resume p. ${progress.current_page}` : "Start reading"}</Link>
                   ) : (
                     <Link href={`/books/${book.id}`} className="btn-gold py-1.5">Renew rental</Link>
                   )}
+                  <ShelfRate bookId={book.id} initialRating={myRatingByBook.get(book.id) ?? null} />
+                  <Link href={`/books/${book.id}#ratings`} className="text-xs font-medium text-ink-faint hover:text-forest hover:underline">
+                    Review
+                  </Link>
                 </div>
               </div>
             </div>

@@ -90,7 +90,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <section className="space-y-3">
+      <section id="ratings" className="space-y-3 scroll-mt-20">
         <div className="flex items-end justify-between">
           <h2 className="text-2xl font-semibold">Ratings &amp; reviews</h2>
           <RatingSummary average={ratingAvg} count={ratingCount} />
