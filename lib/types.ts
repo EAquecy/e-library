@@ -28,6 +28,7 @@ export type AvailabilityBlock = {
   start_date: string;
   end_date: string;
   note: string | null;
+  link: string | null;
   created_at: string;
 };
 

@@ -10,22 +10,33 @@ export function AvailabilityManager({ initialBlocks }: { initialBlocks: Availabi
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
+  const [link, setLink] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function add() {
     setError(null);
     start(async () => {
-      const res = await addAvailabilityBlock({ startDate, endDate: endDate || startDate, note });
+      const res = await addAvailabilityBlock({ startDate, endDate: endDate || startDate, note, link });
       if (!res.ok) return setError(res.error);
       setBlocks((bs) =>
-        [...bs, { id: crypto.randomUUID(), owner_id: "", start_date: startDate, end_date: endDate || startDate, note: note.trim() || null, created_at: new Date().toISOString() }].sort((a, b) =>
-          a.start_date.localeCompare(b.start_date)
-        )
+        [
+          ...bs,
+          {
+            id: crypto.randomUUID(),
+            owner_id: "",
+            start_date: startDate,
+            end_date: endDate || startDate,
+            note: note.trim() || null,
+            link: link.trim() || null,
+            created_at: new Date().toISOString(),
+          },
+        ].sort((a, b) => a.start_date.localeCompare(b.start_date))
       );
       setStartDate("");
       setEndDate("");
       setNote("");
+      setLink("");
     });
   }
 
@@ -48,13 +59,18 @@ export function AvailabilityManager({ initialBlocks }: { initialBlocks: Availabi
             <input id="av_start" type="date" min={today} className="input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
           <div>
-            <label className="label" htmlFor="av_end">To (optional — defaults to same day)</label>
+            <label className="label" htmlFor="av_end">To</label>
             <input id="av_end" type="date" min={startDate || today} className="input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <p className="mt-1 text-xs text-ink-faint">Optional — defaults to same day</p>
           </div>
         </div>
         <div>
           <label className="label" htmlFor="av_note">Note (shown publicly — e.g. &ldquo;At a conference&rdquo;, &ldquo;Unavailable&rdquo;)</label>
           <input id="av_note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Unavailable" />
+        </div>
+        <div>
+          <label className="label" htmlFor="av_link">Link (optional — e.g. webinar signup, conference page)</label>
+          <input id="av_link" type="url" className="input" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" />
         </div>
         {error && <p className="text-xs text-clay">{error}</p>}
         <button className="btn-primary py-1.5" disabled={pending || !startDate} onClick={add}>
@@ -74,6 +90,11 @@ export function AvailabilityManager({ initialBlocks }: { initialBlocks: Availabi
                   {b.end_date !== b.start_date && <> – {shortDate(b.end_date)}</>}
                 </p>
                 {b.note && <p className="text-xs text-ink-soft">{b.note}</p>}
+                {b.link && (
+                  <a href={b.link} target="_blank" rel="noopener noreferrer" className="text-xs text-forest hover:underline">
+                    {b.link}
+                  </a>
+                )}
               </div>
               <button className="text-xs text-ink-faint hover:text-clay" onClick={() => remove(b.id)}>
                 Remove

@@ -97,6 +97,14 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
                   {b.end_date !== b.start_date && <> – {shortDate(b.end_date)}</>}
                 </span>
                 {b.note && <span className="text-ink-soft"> · {b.note}</span>}
+                {b.link && (
+                  <>
+                    {" · "}
+                    <a href={b.link} target="_blank" rel="noopener noreferrer" className="text-forest hover:underline">
+                      Join / sign up →
+                    </a>
+                  </>
+                )}
               </li>
             ))}
           </ul>

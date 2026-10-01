@@ -253,7 +253,7 @@ export async function completeOnboarding(formData: FormData) {
 }
 
 // ---------- Availability calendar ----------
-export async function addAvailabilityBlock(input: { startDate: string; endDate: string; note: string }): Promise<ActionResult> {
+export async function addAvailabilityBlock(input: { startDate: string; endDate: string; note: string; link?: string }): Promise<ActionResult> {
   const supabase = createClient();
   const {
     data: { user },
@@ -266,6 +266,7 @@ export async function addAvailabilityBlock(input: { startDate: string; endDate: 
     start_date: input.startDate,
     end_date: input.endDate,
     note: input.note.trim() || null,
+    link: input.link?.trim() || null,
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/settings/availability");
