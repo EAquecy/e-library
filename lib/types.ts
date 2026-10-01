@@ -1,6 +1,6 @@
 export type Role = "student" | "lecturer" | "publisher";
 
-export type Publication = { title: string; url: string };
+export type Publication = { title: string; url: string; date: string | null };
 
 // Standardized availability: a set of weekdays plus one start/end time —
 // never free text.

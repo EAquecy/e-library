@@ -47,7 +47,7 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
           <h2 className="text-lg font-semibold">Publications</h2>
           <ul className="card divide-y divide-paper-edge">
             {person.publications.map((p, i) => (
-              <li key={i} className="px-4 py-3 text-sm">
+              <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-3 text-sm">
                 {p.url ? (
                   <a href={p.url} target="_blank" rel="noopener noreferrer" className="font-medium text-forest hover:underline">
                     {p.title}
@@ -55,6 +55,7 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
                 ) : (
                   <span className="font-medium">{p.title}</span>
                 )}
+                {p.date && <span className="text-xs text-ink-faint">{shortDate(p.date)}</span>}
               </li>
             ))}
           </ul>

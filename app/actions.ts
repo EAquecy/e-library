@@ -158,6 +158,16 @@ function readSchedule(formData: FormData, name: string): { days: string[]; start
   return { days, start, end };
 }
 
+function readPublications(formData: FormData) {
+  const titles = formData.getAll("pub_title").map((v) => String(v).trim());
+  const urls = formData.getAll("pub_url").map((v) => String(v).trim());
+  const dates = formData.getAll("pub_date").map((v) => String(v).trim());
+  return titles
+    .map((title, i) => ({ title, url: urls[i] ?? "", date: dates[i] || null }))
+    .filter((p) => p.title || p.url)
+    .map((p) => ({ title: p.title || p.url, url: p.url, date: p.date }));
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = createClient();
   const {
@@ -175,14 +185,7 @@ export async function updateProfile(formData: FormData) {
   if (formData.has("institution")) patch.institution = String(formData.get("institution") || "").trim() || null;
   if (formData.has("private_session_start")) patch.private_session_schedule = readSchedule(formData, "private_session");
   if (formData.has("public_session_start")) patch.public_session_schedule = readSchedule(formData, "public_session");
-  if (formData.has("pub_title")) {
-    const titles = formData.getAll("pub_title").map((v) => String(v).trim());
-    const urls = formData.getAll("pub_url").map((v) => String(v).trim());
-    patch.publications = titles
-      .map((title, i) => ({ title, url: urls[i] ?? "" }))
-      .filter((p) => p.title || p.url)
-      .map((p) => ({ title: p.title || p.url, url: p.url }));
-  }
+  if (formData.has("pub_title")) patch.publications = readPublications(formData);
   await supabase.from("profiles").update(patch).eq("id", user.id);
   revalidatePath("/", "layout");
   redirect("/settings?saved=1");
@@ -228,12 +231,7 @@ export async function completeOnboarding(formData: FormData) {
   if (!publicSchedule) missing.push("your public-session availability");
   if (missing.length) redirect(`/onboarding?error=${encodeURIComponent("Add " + missing.join(", ") + " to continue.")}`);
 
-  const titles = formData.getAll("pub_title").map((v) => String(v).trim());
-  const urls = formData.getAll("pub_url").map((v) => String(v).trim());
-  const publications = titles
-    .map((title, i) => ({ title, url: urls[i] ?? "" }))
-    .filter((p) => p.title || p.url)
-    .map((p) => ({ title: p.title || p.url, url: p.url }));
+  const publications = readPublications(formData);
 
   const { error } = await supabase
     .from("profiles")
