@@ -53,7 +53,6 @@ export function Reader({
   const [pagesOpen, setPagesOpen] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [swipeAxis, setSwipeAxis] = useState<"horizontal" | "vertical">("horizontal");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -210,9 +209,7 @@ export function Reader({
 
   const go = useCallback((p: number) => setPage((cur) => Math.min(Math.max(1, p), numPages || cur)), [numPages]);
 
-  // Swipe to turn pages — direction is whichever axis the reader picked.
-  // Horizontal: swipe left for next page, right for previous (standard
-  // book-style paging). Vertical: swipe up for next, down for previous.
+  // Swipe left/right to turn pages, book-style.
   const SWIPE_THRESHOLD = 48;
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -226,15 +223,10 @@ export function Reader({
       const t = e.changedTouches[0];
       const dx = t.clientX - start.x;
       const dy = t.clientY - start.y;
-      if (swipeAxis === "horizontal") {
-        if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
-        go(dx < 0 ? page + 1 : page - 1);
-      } else {
-        if (Math.abs(dy) < SWIPE_THRESHOLD || Math.abs(dy) < Math.abs(dx)) return;
-        go(dy < 0 ? page + 1 : page - 1);
-      }
+      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+      go(dx < 0 ? page + 1 : page - 1);
     },
-    [swipeAxis, go, page]
+    [go, page]
   );
 
   useEffect(() => {
@@ -323,14 +315,6 @@ export function Reader({
           <button className="btn-ghost px-2.5 py-1.5" onClick={toggleFullscreen} title={isFullscreen ? "Exit full screen" : "Full screen"}>
             {isFullscreen ? "Exit full screen" : "Full screen"}
           </button>
-          <div className="grid grid-cols-2 gap-1 rounded-md bg-paper-deep p-1 text-xs" title="Swipe direction for turning pages on touch screens">
-            <button onClick={() => setSwipeAxis("horizontal")} className={`rounded px-2 py-1 ${swipeAxis === "horizontal" ? "bg-white font-medium shadow-sm" : "text-ink-soft"}`}>
-              Swipe ↔
-            </button>
-            <button onClick={() => setSwipeAxis("vertical")} className={`rounded px-2 py-1 ${swipeAxis === "vertical" ? "bg-white font-medium shadow-sm" : "text-ink-soft"}`}>
-              Swipe ↕
-            </button>
-          </div>
           {isStudent && (
             <>
               <span className="mx-1 h-5 w-px bg-paper-edge" />
