@@ -10,7 +10,8 @@ export async function Nav() {
   } = await supabase.auth.getUser();
 
   let profile: { full_name: string; role: string } | null = null;
-  let pending = 0;
+  let pendingDiscussions = 0;
+  let pendingSessions = 0;
   if (user) {
     const { data } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
     profile = data;
@@ -19,7 +20,8 @@ export async function Nav() {
         supabase.from("discussions").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "pending"),
         supabase.from("consultations").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "requested"),
       ]);
-      pending = (d ?? 0) + (c ?? 0);
+      pendingDiscussions = d ?? 0;
+      pendingSessions = c ?? 0;
     }
   }
 
@@ -29,16 +31,16 @@ export async function Nav() {
           { href: "/lecturer", label: "Dashboard" },
           { href: "/lecturer/upload", label: "Upload" },
           { href: "/lecturer/earnings", label: "Earnings" },
-          { href: "/discussions", label: "Discussions", badge: pending },
-          { href: "/sessions", label: "Sessions" },
+          { href: "/discussions", label: "Discussions", badge: pendingDiscussions },
+          { href: "/sessions", label: "Sessions", badge: pendingSessions },
         ]
       : profile?.role === "publisher"
         ? [
             { href: "/publisher", label: "Dashboard" },
             { href: "/publisher/upload", label: "Upload" },
             { href: "/publisher/earnings", label: "Earnings" },
-            { href: "/discussions", label: "Discussions", badge: pending },
-            { href: "/sessions", label: "Sessions" },
+            { href: "/discussions", label: "Discussions", badge: pendingDiscussions },
+            { href: "/sessions", label: "Sessions", badge: pendingSessions },
           ]
         : profile
           ? [
