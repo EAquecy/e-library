@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Logo } from "./logo";
+import { NavLinks } from "./nav-links";
 import { initials } from "@/lib/format";
 
 export async function Nav() {
@@ -9,16 +10,29 @@ export async function Nav() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let profile: { full_name: string; role: string } | null = null;
+  let profile: { full_name: string; role: string; discussions_seen_at: string; sessions_seen_at: string } | null = null;
   let pendingDiscussions = 0;
   let pendingSessions = 0;
   if (user) {
-    const { data } = await supabase.from("profiles").select("full_name, role").eq("id", user.id).single();
+    const { data } = await supabase.from("profiles").select("full_name, role, discussions_seen_at, sessions_seen_at").eq("id", user.id).single();
     profile = data;
     if (profile?.role === "lecturer" || profile?.role === "publisher") {
+      // Count only requests that arrived since the last time this person
+      // opened the Discussions / Sessions page, so the badge clears on
+      // visiting instead of sticking around for every still-pending item.
       const [{ count: d }, { count: c }] = await Promise.all([
-        supabase.from("discussions").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "pending"),
-        supabase.from("consultations").select("id", { count: "exact", head: true }).eq("lecturer_id", user.id).eq("status", "requested"),
+        supabase
+          .from("discussions")
+          .select("id", { count: "exact", head: true })
+          .eq("lecturer_id", user.id)
+          .eq("status", "pending")
+          .gt("created_at", profile.discussions_seen_at),
+        supabase
+          .from("consultations")
+          .select("id", { count: "exact", head: true })
+          .eq("lecturer_id", user.id)
+          .eq("status", "requested")
+          .gt("created_at", profile.sessions_seen_at),
       ]);
       pendingDiscussions = d ?? 0;
       pendingSessions = c ?? 0;
@@ -59,16 +73,7 @@ export async function Nav() {
         <Link href={home}>
           <Logo />
         </Link>
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="relative whitespace-nowrap rounded-md px-3 py-1.5 text-ink-soft hover:bg-paper-deep hover:text-ink">
-              {l.label}
-              {"badge" in l && l.badge ? (
-                <span className="ml-1.5 rounded-full bg-clay px-1.5 text-[10px] font-bold text-white">{l.badge}</span>
-              ) : null}
-            </Link>
-          ))}
-        </nav>
+        <NavLinks links={links} />
         {profile ? (
           <div className="flex items-center gap-2">
             <Link href="/settings" title="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-xs font-bold text-paper">

@@ -367,3 +367,20 @@ export async function deleteBook(bookId: string, home: "lecturer" | "publisher" 
   revalidatePath(`/${home}`);
   redirect(`/${home}`);
 }
+
+// ---------- Nav badge "seen" cursors ----------
+// Called from the Discussions / Sessions list pages on render so the nav
+// badge only counts items that arrived after the viewer's last visit.
+export async function markDiscussionsSeen(): Promise<void> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").update({ discussions_seen_at: new Date().toISOString() }).eq("id", user.id);
+}
+
+export async function markSessionsSeen(): Promise<void> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").update({ sessions_seen_at: new Date().toISOString() }).eq("id", user.id);
+}

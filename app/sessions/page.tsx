@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/session";
 import { StatusChip } from "@/components/status-chip";
 import { SessionActions } from "@/components/session-actions";
+import { markSessionsSeen } from "@/app/actions";
 import { cedis, dateTime } from "@/lib/format";
 import type { Consultation, ConsultationAttendee } from "@/lib/types";
 
@@ -17,6 +18,7 @@ const KIND_LABEL: Record<Consultation["kind"], string> = { private: "One-on-one"
 export default async function SessionsPage() {
   const { supabase, user, profile } = await requireProfile();
   const isTeaching = profile.role === "lecturer" || profile.role === "publisher";
+  if (isTeaching) await markSessionsSeen();
   const select =
     "*, discussion:discussions(id, title, book:books(title, course_code)), student:profiles!consultations_student_id_fkey(full_name, student_id), lecturer:profiles!consultations_lecturer_id_fkey(full_name), consultation_attendees(id, consultation_id, email, student_id, created_at, student:profiles!consultation_attendees_student_id_fkey(full_name))";
 

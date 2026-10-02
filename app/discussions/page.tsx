@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/session";
 import { StatusChip } from "@/components/status-chip";
+import { markDiscussionsSeen } from "@/app/actions";
 import { shortDate } from "@/lib/format";
 import type { Discussion } from "@/lib/types";
 
@@ -12,7 +13,8 @@ type Row = Discussion & {
 
 export default async function DiscussionsPage() {
   const { supabase, user, profile } = await requireProfile();
-  const isLecturer = profile.role === "lecturer";
+  const isLecturer = profile.role === "lecturer" || profile.role === "publisher";
+  if (isLecturer) await markDiscussionsSeen();
 
   const { data } = await supabase
     .from("discussions")
