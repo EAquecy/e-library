@@ -22,6 +22,7 @@ export type Profile = {
   private_session_schedule: SessionSchedule | null;
   public_session_schedule: SessionSchedule | null;
   profile_completed: boolean;
+  interests: string[];
   discussions_seen_at: string;
   sessions_seen_at: string;
 };

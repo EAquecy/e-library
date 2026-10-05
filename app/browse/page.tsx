@@ -4,6 +4,7 @@ import { BookCover } from "@/components/book-cover";
 import { BrowseFilters } from "@/components/browse-filters";
 import { RatingSummary } from "@/components/rating-stars";
 import { cedis } from "@/lib/format";
+import { interestScore } from "@/lib/fields";
 import type { Book } from "@/lib/types";
 
 export default async function BrowsePage({
@@ -23,7 +24,7 @@ export default async function BrowsePage({
     yearTo?: string;
   };
 }) {
-  const { supabase } = await requireProfile();
+  const { supabase, profile } = await requireProfile();
   const q = (searchParams.q ?? "").trim();
   const course = (searchParams.course ?? "").trim();
   const subject = (searchParams.subject ?? "").trim();
@@ -86,6 +87,20 @@ export default async function BrowsePage({
     });
   }
 
+  // Recommendations: learners only, on the unfiltered catalogue.
+  const isLearner = profile.role === "student";
+  const interests = profile.interests ?? [];
+  const filtering = !!(q || course || subject || dept || lecturer || kind || year || yearFrom || yearTo);
+  let recommended: (Book & { lecturer: { id: string; full_name: string; department: string | null } | null })[] = [];
+  if (isLearner && !filtering && interests.length > 0) {
+    recommended = books
+      .map((b) => ({ b, score: interestScore(b, interests) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((x) => x.b);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -127,6 +142,35 @@ export default async function BrowsePage({
           )}
         </form>
       </div>
+
+      {isLearner && !filtering && interests.length === 0 && (
+        <div className="card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <p className="text-ink-soft">Tell us which fields you&apos;re interested in and we&apos;ll recommend titles for you.</p>
+          <Link href="/settings" className="btn-ghost">Choose fields</Link>
+        </div>
+      )}
+
+      {recommended.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl font-semibold">Recommended for you</h2>
+            <Link href="/settings" className="text-xs text-forest underline">Edit interests</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+            {recommended.map((b) => (
+              <Link key={b.id} href={`/books/${b.id}`} className="group space-y-2">
+                <div className="transition group-hover:-translate-y-1">
+                  <BookCover title={b.title} courseCode={b.course_code} coverPath={b.cover_path} kind={b.kind} />
+                </div>
+                <div>
+                  <p className="line-clamp-2 font-serif font-semibold leading-snug">{b.title}</p>
+                  <p className="text-xs text-ink-faint">{b.lecturer?.full_name}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <BrowseFilters courseCodes={courseCodes} subjects={subjects} departments={departments} lecturers={lecturers} />
 

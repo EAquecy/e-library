@@ -4,6 +4,7 @@ import { updateProfile } from "@/app/actions";
 import { AvatarUploader } from "@/components/avatar-uploader";
 import { PublicationsEditor } from "@/components/publications-editor";
 import { SchedulePicker } from "@/components/schedule-picker";
+import { InterestPicker } from "@/components/interest-picker";
 
 export default async function SettingsPage({ searchParams }: { searchParams: { saved?: string } }) {
   const { profile, user } = await requireProfile();
@@ -31,10 +32,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: { s
           <input id="full_name" name="full_name" defaultValue={profile.full_name} required className="input" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="department">{profile.role === "publisher" ? "Field / discipline" : "Department"}</label>
-            <input id="department" name="department" defaultValue={profile.department ?? ""} className="input" />
-          </div>
+          {isTeaching ? (
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="department">{profile.role === "publisher" ? "Field / discipline" : "Department"}</label>
+              <input id="department" name="department" defaultValue={profile.department ?? ""} className="input" />
+            </div>
+          ) : (
+            <div className="sm:col-span-2">
+              <p className="label">Interested fields</p>
+              <InterestPicker defaultValue={profile.interests ?? []} />
+            </div>
+          )}
           {isTeaching && (
             <div className="sm:col-span-2">
               <label className="label" htmlFor="institution">University / institution (optional)</label>

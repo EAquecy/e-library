@@ -214,9 +214,12 @@ export async function updateProfile(formData: FormData) {
   const groupRate = Number(formData.get("group_session_price"));
   const patch: Record<string, unknown> = {
     full_name: String(formData.get("full_name") || "").trim(),
-    department: String(formData.get("department") || "").trim() || null,
     bio: String(formData.get("bio") || "").trim() || null,
   };
+  if (formData.has("department")) patch.department = String(formData.get("department") || "").trim() || null;
+  if (formData.has("interests_present")) {
+    patch.interests = Array.from(new Set(formData.getAll("interests").map((v) => String(v).trim()).filter(Boolean))).slice(0, 30);
+  }
   if (formData.has("session_rate") && Number.isFinite(rate) && rate >= 0) patch.session_rate = rate;
   if (formData.has("immediate_session_price") && Number.isFinite(immediateRate) && immediateRate >= 0) patch.immediate_session_price = immediateRate;
   if (formData.has("group_session_price") && Number.isFinite(groupRate) && groupRate >= 0) patch.group_session_price = groupRate;

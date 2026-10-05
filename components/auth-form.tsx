@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { InterestPicker } from "@/components/interest-picker";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,6 +44,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             full_name: String(fd.get("full_name") || "").trim(),
             role,
             department: String(fd.get("department") || "").trim(),
+            interests: role === "student" ? interests : [],
           },
         },
       });
@@ -98,10 +101,17 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               <input className="input" id="full_name" name="full_name" required />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="label" htmlFor="department">{role === "publisher" ? "Field / discipline (optional)" : "Department"}</label>
-                <input className="input" id="department" name="department" placeholder="e.g. Computer Science" />
-              </div>
+              {role === "student" ? (
+                <div className="col-span-2">
+                  <p className="label">Interested fields</p>
+                  <InterestPicker onChange={setInterests} />
+                </div>
+              ) : (
+                <div className="col-span-2">
+                  <label className="label" htmlFor="department">{role === "publisher" ? "Field / discipline (optional)" : "Department"}</label>
+                  <input className="input" id="department" name="department" placeholder="e.g. Computer Science" />
+                </div>
+              )}
             </div>
           </>
         )}
