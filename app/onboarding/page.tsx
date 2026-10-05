@@ -14,7 +14,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: {
         <p className="eyebrow">One last step</p>
         <h1 className="text-3xl font-semibold">Complete your profile</h1>
         <p className="text-sm text-ink-soft">
-          Students see this before asking you a question or booking a session — a photo, a short bio, and when
+          Learners see this before asking you a question or booking a session — a photo, a short bio, and when
           you&apos;re available. Institution and publications are optional.
         </p>
       </div>

@@ -26,7 +26,7 @@ export default async function Home() {
             the pages that matter, and ask your lecturer questions right from the page you&apos;re on.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/signup?role=student" className="btn-primary px-5 py-2.5">I&apos;m a student</Link>
+            <Link href="/signup?role=student" className="btn-primary px-5 py-2.5">I&apos;m a learner</Link>
             <Link href="/signup?role=lecturer" className="btn-ghost px-5 py-2.5">I&apos;m a lecturer</Link>
             <Link href="/signup?role=publisher" className="btn-ghost px-5 py-2.5">I&apos;m a publisher</Link>
           </div>

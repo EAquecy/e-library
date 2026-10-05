@@ -64,7 +64,7 @@ export default async function EditPublicationPage({ params, searchParams }: { pa
             <input id="rent_days" name="rent_days" type="number" min={1} max={365} defaultValue={b.rent_days} className="input" />
           </div>
         </div>
-        <p className="text-xs text-ink-faint">Leave a price empty to switch that option off. At least one is required. Price changes don&apos;t affect students who already paid.</p>
+        <p className="text-xs text-ink-faint">Leave a price empty to switch that option off. At least one is required. Price changes don&apos;t affect learners who already paid.</p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="published" defaultChecked={b.published} /> Published
         </label>

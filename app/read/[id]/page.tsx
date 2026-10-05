@@ -33,7 +33,7 @@ export default async function ReadPage({ params }: { params: { id: string } }) {
     supabase.from("bookmarks").select("id, page, note").eq("student_id", user.id).eq("book_id", b.id).order("page"),
   ]);
 
-  const watermark = [profile.full_name, profile.student_id, user.email].filter(Boolean).join(" · ");
+  const watermark = [profile.full_name, user.email].filter(Boolean).join(" · ");
 
   return (
     <Reader

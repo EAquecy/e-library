@@ -18,7 +18,7 @@ export default async function AvailabilityPage() {
         <p className="eyebrow mt-2">Availability</p>
         <h1 className="text-3xl font-semibold">Your calendar</h1>
         <p className="text-sm text-ink-soft">
-          Mark dates you&apos;re unavailable, or flag an upcoming conference — students see this on your public profile before asking for a session.
+          Mark dates you&apos;re unavailable, or flag an upcoming conference — learners see this on your public profile before asking for a session.
         </p>
       </div>
       <AvailabilityManager initialBlocks={(data ?? []) as AvailabilityBlock[]} />

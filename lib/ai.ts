@@ -50,7 +50,7 @@ export function buildPrompt(opts: {
   const { kind, scope, bookTitle, courseCode, pageFrom, pageTo, question, tier } = opts;
   const text = opts.text.length > MAX_CHARS ? opts.text.slice(0, MAX_CHARS) + "\n…[truncated]" : opts.text;
   const where = scope === "page" ? `page ${pageFrom}` : `pages ${pageFrom}–${pageTo}`;
-  const header = `You are a study assistant for a student reading "${bookTitle}"${courseCode ? ` (${courseCode})` : ""}, ${where}. Base your answer only on the excerpt below; if it doesn't contain enough to answer, say so plainly. Do not invent facts, page numbers, or citations. Use concise Markdown.`;
+  const header = `You are a study assistant for a learner reading "${bookTitle}"${courseCode ? ` (${courseCode})` : ""}, ${where}. Base your answer only on the excerpt below; if it doesn't contain enough to answer, say so plainly. Do not invent facts, page numbers, or citations. Use concise Markdown.`;
 
   const questionsTask = buildQuestionsTask(tier ?? FREE_QUESTION_TIER);
 
@@ -61,7 +61,7 @@ export function buildPrompt(opts: {
         ? questionsTask
         : kind === "topics"
           ? "Suggest 4 to 6 research topics or questions this material naturally opens up, each with one sentence on why it's worth exploring and, where relevant, what field or angle it connects to."
-          : `Answer the student's question using only the excerpt as context. Student's question: "${question}"`;
+          : `Answer the learner's question using only the excerpt as context. Learner's question: "${question}"`;
 
   return `${header}\n\n${task}\n\n--- EXCERPT (${where}) ---\n${text}\n--- END EXCERPT ---`;
 }
@@ -73,8 +73,8 @@ function buildQuestionsTask(tier: AiTier): string {
   }
 
   const c = QUESTION_TIER_CONFIG[tier] ?? DEFAULT_TIER_CONFIG;
-  const firstSetNumber = 2; // Set 1 is the free set the student already has.
+  const firstSetNumber = 2; // Set 1 is the free set the learner already has.
   const lastSetNumber = firstSetNumber + c.setsCount - 1;
   const setRange = c.setsCount === 1 ? `Set ${firstSetNumber}` : `Sets ${firstSetNumber}–${lastSetNumber}`;
-  return `Draft ${c.setsCount} further, clearly separate ${c.setsCount === 1 ? "set" : "sets"} of exam-style practice questions on this material (${setRange}), each set with ${c.mcqPerSet} objective/multiple-choice questions (label options A-D) and ${c.writtenPerSet} scenario or short-written questions that apply the material to a situation. Head each set with a Markdown heading ("## Set ${firstSetNumber}", ${c.setsCount > 1 ? `"## Set ${firstSetNumber + 1}", ` : ""}etc.) and number the questions 1-${c.mcqPerSet + c.writtenPerSet} within each set. Make every set different from the others and from a short introductory set the student already saw (don't assume what that set contained, just avoid the most obvious repeats). Then, for each set, add its own '## Set N Answers' section giving the full correct answer for every question (not just a hint) — for multiple-choice, state the correct letter; for scenario/written questions, give a complete model answer with brief reasoning.`;
+  return `Draft ${c.setsCount} further, clearly separate ${c.setsCount === 1 ? "set" : "sets"} of exam-style practice questions on this material (${setRange}), each set with ${c.mcqPerSet} objective/multiple-choice questions (label options A-D) and ${c.writtenPerSet} scenario or short-written questions that apply the material to a situation. Head each set with a Markdown heading ("## Set ${firstSetNumber}", ${c.setsCount > 1 ? `"## Set ${firstSetNumber + 1}", ` : ""}etc.) and number the questions 1-${c.mcqPerSet + c.writtenPerSet} within each set. Make every set different from the others and from a short introductory set the learner already saw (don't assume what that set contained, just avoid the most obvious repeats). Then, for each set, add its own '## Set N Answers' section giving the full correct answer for every question (not just a hint) — for multiple-choice, state the correct letter; for scenario/written questions, give a complete model answer with brief reasoning.`;
 }

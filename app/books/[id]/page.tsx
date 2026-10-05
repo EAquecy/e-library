@@ -108,7 +108,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
                 .map((r) => (
                   <li key={r.id} className="space-y-1 px-4 py-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{r.student?.full_name ?? "Student"}</span>
+                      <span className="text-sm font-medium">{r.student?.full_name ?? "Learner"}</span>
                       <span className="text-xs text-amber-500">{"★".repeat(r.rating)}</span>
                     </div>
                     <p className="text-sm text-ink-soft">{r.review}</p>

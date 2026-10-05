@@ -47,7 +47,7 @@ export default async function DiscussionsPage() {
       </div>
 
       {isLecturer && (
-        <Section title={`Awaiting your approval (${pending.length})`} rows={pending} empty="Nothing waiting. New requests from students appear here." showStudent />
+        <Section title={`Awaiting your approval (${pending.length})`} rows={pending} empty="Nothing waiting. New requests from learners appear here." showStudent />
       )}
       <Section title={isLecturer ? "Active and past" : "My discussions"} rows={isLecturer ? rest : rows} empty="No discussions yet." showStudent={isLecturer} />
       {!isLecturer && publicRows.length > 0 && <Section title="Public threads from classmates" rows={publicRows} empty="" showStudent />}

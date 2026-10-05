@@ -58,7 +58,7 @@ export default async function DiscussionPage({ params }: { params: { id: string 
             <StatusChip value={d.visibility} />
             <span>
               opened by {d.student.full_name}
-              {isLecturer && d.student.student_id ? ` (${d.student.student_id})` : ""} · {dateTime(d.created_at)}
+ · {dateTime(d.created_at)}
             </span>
             {d.page && (
               <Link href={`/read/${d.book.id}`} className="text-forest underline">Open the book</Link>

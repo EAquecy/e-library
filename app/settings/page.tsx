@@ -8,7 +8,7 @@ import { SchedulePicker } from "@/components/schedule-picker";
 export default async function SettingsPage({ searchParams }: { searchParams: { saved?: string } }) {
   const { profile, user } = await requireProfile();
   const isTeaching = profile.role === "lecturer" || profile.role === "publisher";
-  const roleLabel = profile.role === "lecturer" ? "Lecturer" : profile.role === "publisher" ? "Publisher" : "Student";
+  const roleLabel = profile.role === "lecturer" ? "Lecturer" : profile.role === "publisher" ? "Publisher" : "Learner";
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
@@ -31,13 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { s
           <input id="full_name" name="full_name" defaultValue={profile.full_name} required className="input" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {profile.role === "student" && (
-            <div>
-              <label className="label" htmlFor="student_id">Student ID</label>
-              <input id="student_id" name="student_id" defaultValue={profile.student_id ?? ""} className="input" />
-            </div>
-          )}
-          <div className={isTeaching ? "sm:col-span-2" : ""}>
+          <div className="sm:col-span-2">
             <label className="label" htmlFor="department">{profile.role === "publisher" ? "Field / discipline" : "Department"}</label>
             <input id="department" name="department" defaultValue={profile.department ?? ""} className="input" />
           </div>

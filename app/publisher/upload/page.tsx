@@ -8,7 +8,7 @@ export default async function PublisherUploadPage() {
       <div>
         <p className="eyebrow">New publication</p>
         <h1 className="text-3xl font-semibold">Upload a research publication or journal</h1>
-        <p className="text-sm text-ink-soft">PDF only, up to 50 MB. Students can only read it inside Lectern, watermarked with their name and ID.</p>
+        <p className="text-sm text-ink-soft">PDF only, up to 50 MB. Learners can only read it inside Lectern, watermarked with their name and email.</p>
       </div>
       <UploadForm userId={user.id} variant="publisher" />
     </div>

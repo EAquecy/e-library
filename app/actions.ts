@@ -217,7 +217,6 @@ export async function updateProfile(formData: FormData) {
     department: String(formData.get("department") || "").trim() || null,
     bio: String(formData.get("bio") || "").trim() || null,
   };
-  if (formData.has("student_id")) patch.student_id = String(formData.get("student_id") || "").trim() || null;
   if (formData.has("session_rate") && Number.isFinite(rate) && rate >= 0) patch.session_rate = rate;
   if (formData.has("immediate_session_price") && Number.isFinite(immediateRate) && immediateRate >= 0) patch.immediate_session_price = immediateRate;
   if (formData.has("group_session_price") && Number.isFinite(groupRate) && groupRate >= 0) patch.group_session_price = groupRate;
@@ -356,7 +355,7 @@ export async function deleteBook(bookId: string, home: "lecturer" | "publisher" 
   const supabase = createClient();
   const { count } = await supabase.from("entitlements").select("id", { count: "exact", head: true }).eq("book_id", bookId);
   if (count && count > 0) {
-    redirect(`/${home}/books/${bookId}?error=${encodeURIComponent("Students have bought or rented this title, so it can't be deleted. Unpublish it instead.")}`);
+    redirect(`/${home}/books/${bookId}?error=${encodeURIComponent("Learners have bought or rented this title, so it can't be deleted. Unpublish it instead.")}`);
   }
   const { data: book } = await supabase.from("books").select("file_path, cover_path").eq("id", bookId).single();
   const { error } = await supabase.from("books").delete().eq("id", bookId);

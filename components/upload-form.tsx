@@ -180,7 +180,7 @@ export function UploadForm({ userId, variant = "lecturer" }: { userId: string; v
       </fieldset>
 
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="published" defaultChecked /> Publish now (students can find it immediately)
+        <input type="checkbox" name="published" defaultChecked /> Publish now (learners can find it immediately)
       </label>
 
       <p className="text-xs text-ink-faint">Study assistant pricing for this title is set by Lectern, not by {variant === "publisher" ? "publishers" : "lecturers"}.</p>

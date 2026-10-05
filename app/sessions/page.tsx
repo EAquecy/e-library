@@ -54,7 +54,7 @@ export default async function SessionsPage() {
           <h1 className="text-3xl font-semibold">Sessions</h1>
           <p className="text-sm text-ink-soft">
             {isTeaching
-              ? "Confirm requests and add a meeting link. Students pay once you confirm."
+              ? "Confirm requests and add a meeting link. Learners pay once you confirm."
               : "Book a session from any private discussion. Pay after your lecturer confirms."}
           </p>
         </div>
@@ -87,7 +87,7 @@ export default async function SessionsPage() {
                     </div>
                     <p className="text-sm text-ink-soft">
                       {c.duration_minutes} min · {cedis(c.fee)} ·{" "}
-                      {isTeaching ? `${c.student?.full_name}${c.student?.student_id ? ` (${c.student.student_id})` : ""}` : `with ${c.lecturer?.full_name}`}
+                      {isTeaching ? c.student?.full_name : `with ${c.lecturer?.full_name}`}
                     </p>
                     {c.kind === "group" && (
                       <p className="text-sm text-ink-soft">

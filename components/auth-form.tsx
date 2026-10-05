@@ -16,10 +16,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    try {
+      await submit(e.currentTarget);
+    } catch {
+      setBusy(false);
+      setError("Couldn't reach the server. Check your internet connection (turn off any VPN, data saver or ad blocker for this site) and try again.");
+    }
+  }
+
+  async function submit(form: HTMLFormElement) {
     setBusy(true);
     setError(null);
     setNotice(null);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const email = String(fd.get("email")).trim();
     const password = String(fd.get("password"));
     const supabase = createClient();
@@ -32,14 +41,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           data: {
             full_name: String(fd.get("full_name") || "").trim(),
             role,
-            student_id: String(fd.get("student_id") || "").trim(),
             department: String(fd.get("department") || "").trim(),
           },
         },
       });
       if (error) {
         setBusy(false);
-        return setError(error.message);
+        return setError(friendly(error.message));
       }
       if (!data.session) {
         // Account is auto-confirmed in this MVP; sign in straight away.
@@ -57,7 +65,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setBusy(false);
-      return setError(error.message);
+      return setError(friendly(error.message));
     }
     router.replace(params.get("next") || "/");
     router.refresh();
@@ -67,7 +75,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     <div className="mx-auto max-w-md py-8">
       <h1 className="mb-1 text-3xl font-semibold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
       <p className="mb-6 text-sm text-ink-soft">
-        {mode === "login" ? "Sign in to continue reading." : "Students buy, rent and read. Lecturers publish and answer questions. Publishers list research and journals."}
+        {mode === "login" ? "Sign in to continue reading." : "Learners buy, rent and read. Lecturers publish and answer questions. Publishers list research and journals."}
       </p>
 
       <form onSubmit={onSubmit} className="card space-y-4 p-6">
@@ -81,7 +89,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   onClick={() => setRole(r)}
                   className={`rounded px-3 py-2 text-sm font-medium capitalize ${role === r ? "bg-white shadow-sm" : "text-ink-soft"}`}
                 >
-                  {r}
+                  {r === "student" ? "learner" : r}
                 </button>
               ))}
             </div>
@@ -90,13 +98,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               <input className="input" id="full_name" name="full_name" required />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {role === "student" && (
-                <div>
-                  <label className="label" htmlFor="student_id">Student ID</label>
-                  <input className="input" id="student_id" name="student_id" required />
-                </div>
-              )}
-              <div className={role !== "student" ? "col-span-2" : ""}>
+              <div className="col-span-2">
                 <label className="label" htmlFor="department">{role === "publisher" ? "Field / discipline (optional)" : "Department"}</label>
                 <input className="input" id="department" name="department" placeholder="e.g. Computer Science" />
               </div>
@@ -114,7 +116,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {error && <p className="rounded bg-clay-light px-3 py-2 text-sm text-clay">{error}</p>}
         {notice && <p className="rounded bg-forest-light px-3 py-2 text-sm text-forest">{notice}</p>}
         <button className="btn-primary w-full" disabled={busy}>
-          {busy ? "Please wait…" : mode === "login" ? "Sign in" : `Create ${role} account`}
+          {busy ? "Please wait…" : mode === "login" ? "Sign in" : `Create ${role === "student" ? "learner" : role} account`}
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-ink-soft">
@@ -126,4 +128,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </p>
     </div>
   );
+}
+
+function friendly(message: string) {
+  return /failed to fetch|networkerror|load failed/i.test(message)
+    ? "Couldn't reach the server. Check your internet connection (turn off any VPN, data saver or ad blocker for this site) and try again."
+    : message;
 }

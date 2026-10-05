@@ -30,7 +30,7 @@ export function SessionActions({ c, isLecturer, isBooker = true }: { c: Consulta
       return (
         <div className="w-full space-y-2 sm:w-72">
           <input className="input" placeholder="Meeting link (Google Meet, Zoom…)" value={link} onChange={(e) => setLink(e.target.value)} />
-          <input className="input" placeholder="Note to student (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className="input" placeholder="Note to learner (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex gap-2">
             <button className="btn-primary flex-1" disabled={pending} onClick={() => run(() => respondConsultation(c.id, "confirmed", link, note))}>Confirm</button>
             <button className="btn-danger flex-1" disabled={pending} onClick={() => run(() => respondConsultation(c.id, "declined", "", note))}>Decline</button>
