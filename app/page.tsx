@@ -31,19 +31,20 @@ export default async function Home() {
             <Link href="/signup?role=publisher" className="btn-ghost px-5 py-2.5">I&apos;m a publisher</Link>
           </div>
         </div>
-        <div className="relative mx-auto h-72 w-full max-w-sm">
+        <div className="relative mx-auto h-72 w-full max-w-sm overflow-hidden" aria-hidden>
+          {/* Back to front. Only the front cover prints a title so text never stacks. */}
           {[
-            { t: "Intro to Microeconomics", c: "ECON 101", bg: "#1E4D3A", r: -8, x: 0 },
-            { t: "Data Structures Handout", c: "CSCD 205", bg: "#B4532A", r: 4, x: 90 },
-            { t: "Organic Chemistry I", c: "CHEM 211", bg: "#C8962E", r: -2, x: 45 },
+            { t: "Intro to Microeconomics", c: "ECON 101", bg: "#1E4D3A", r: -8, x: 14, front: false },
+            { t: "Data Structures Handout", c: "CSCD 205", bg: "#B4532A", r: 4, x: 90, front: false },
+            { t: "Organic Chemistry I", c: "CHEM 211", bg: "#C8962E", r: -2, x: 170, front: true },
           ].map((b) => (
             <div
               key={b.t}
-              className="absolute top-4 flex h-60 w-40 flex-col justify-between rounded-r-md rounded-l-sm p-4 text-paper shadow-book"
+              className="absolute top-4 flex h-60 w-[8.5rem] flex-col justify-between rounded-r-md rounded-l-sm p-3 text-paper shadow-book sm:w-40 sm:p-4"
               style={{ background: b.bg, transform: `rotate(${b.r}deg)`, left: b.x }}
             >
-              <span className="text-[10px] font-semibold tracking-widest opacity-80">{b.c}</span>
-              <span className="font-serif text-lg leading-snug">{b.t}</span>
+              <span className="whitespace-nowrap text-[10px] font-semibold tracking-widest opacity-80">{b.c}</span>
+              {b.front && <span className="font-serif text-lg leading-snug">{b.t}</span>}
             </div>
           ))}
         </div>

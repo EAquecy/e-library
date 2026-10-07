@@ -6,6 +6,7 @@
 
 body {
   @apply bg-paper text-ink font-sans antialiased;
+  overflow-wrap: break-word;
 }
 
 h1, h2, h3, .font-display { @apply font-serif; letter-spacing: -0.01em; }

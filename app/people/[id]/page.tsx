@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/session";
-import { avatarUrl, initials, shortDate, cedis, formatSchedule } from "@/lib/format";
+import { shortDate, cedis, formatSchedule } from "@/lib/format";
+import { Avatar } from "@/components/avatar";
 import type { AvailabilityBlock, Profile } from "@/lib/types";
 
 export default async function PersonProfilePage({ params }: { params: { id: string } }) {
@@ -18,22 +19,14 @@ export default async function PersonProfilePage({ params }: { params: { id: stri
   ]);
   if (!profileRow || (profileRow.role !== "lecturer" && profileRow.role !== "publisher")) notFound();
   const person = profileRow as Profile;
-  const url = avatarUrl(person.avatar_path);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <div className="flex flex-wrap items-start gap-5">
-        {url ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Supabase storage URL
-          <img src={url} alt="" className="h-24 w-24 shrink-0 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-forest text-2xl font-semibold text-paper">
-            {initials(person.full_name)}
-          </div>
-        )}
+      <div className="flex items-start gap-4 sm:gap-5">
+        <Avatar path={person.avatar_path} name={person.full_name} size={96} />
         <div className="min-w-0 flex-1">
           <p className="eyebrow">{person.role === "lecturer" ? "Lecturer" : "Publisher"}</p>
-          <h1 className="text-3xl font-semibold">{person.full_name}</h1>
+          <h1 className="text-2xl font-semibold sm:text-3xl">{person.full_name}</h1>
           <p className="text-ink-soft">
             {[person.institution, person.department].filter(Boolean).join(" · ") || " "}
           </p>

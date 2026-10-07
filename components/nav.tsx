@@ -69,24 +69,24 @@ export async function Nav() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-paper-edge bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href={home}>
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
+        <Link href={home} className="shrink-0">
           <Logo />
         </Link>
         <NavLinks links={links} />
         {profile ? (
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Link href="/settings" title="Profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-xs font-bold text-paper">
               {initials(profile.full_name)}
             </Link>
             <form action="/auth/signout" method="post">
-              <button className="text-xs text-ink-faint hover:text-ink">Sign out</button>
+              <button className="whitespace-nowrap text-xs text-ink-faint hover:text-ink">Sign out</button>
             </form>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="btn-ghost py-1.5">Sign in</Link>
-            <Link href="/signup" className="btn-primary py-1.5">Create account</Link>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Link href="/login" className="btn-ghost whitespace-nowrap px-3 py-1.5">Sign in</Link>
+            <Link href="/signup" className="btn-primary whitespace-nowrap px-3 py-1.5">Create account</Link>
           </div>
         )}
       </div>

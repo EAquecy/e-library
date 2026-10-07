@@ -7,7 +7,7 @@ export function NavLinks({ links }: { links: { href: string; label: string; badg
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
+    <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {links.map((l) => {
         const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
         return (
